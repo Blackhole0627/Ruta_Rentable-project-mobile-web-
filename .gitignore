@@ -1,0 +1,23 @@
+node_modules/
+dist/
+.env
+.env.local
+*.log
+.DS_Store
+.idea/
+.vscode/
+android/
+ios/
+.capacitor/
+
+# Unrelated third-party tooling
+Skills/
+
+# Build artifacts / large binaries — not needed in repo
+RutaRentable.apk
+*.apk
+
+# Internal docs — not for the public repo
+RutaRentable_Master_Prompt.md
+requirement(yamamoto) (1).docx
+*.docx
