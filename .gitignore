@@ -21,3 +21,8 @@ RutaRentable.apk
 RutaRentable_Master_Prompt.md
 requirement(yamamoto) (1).docx
 *.docx
+
+# Database migrations & seed data — managed/applied directly on Supabase,
+# kept out of the repo (Edge Functions under supabase/functions stay tracked)
+supabase/migrations/
+supabase/seed/
