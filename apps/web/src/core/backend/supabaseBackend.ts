@@ -227,9 +227,12 @@ export class SupabaseBackend implements BackendAdapter {
         await SocialLogin.initialize({ google: { webClientId: GOOGLE_WEB_CLIENT_ID } });
         googleNativeReady = true;
       }
+      // No `scopes` here on purpose: requesting extra OAuth scopes triggers the
+      // plugin's authorization flow (which needs MainActivity changes). For a
+      // plain sign-in we only need the ID token — email/profile are already in it.
       const res = await SocialLogin.login({
         provider: 'google',
-        options: { scopes: ['email', 'profile'] },
+        options: {},
       });
       const idToken =
         'idToken' in res.result ? res.result.idToken : null;
