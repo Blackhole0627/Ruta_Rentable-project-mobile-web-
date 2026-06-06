@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { App as CapApp } from '@capacitor/app';
-import { StatusBar, Style } from '@capacitor/status-bar';
+import { SafeArea, SystemBarsStyle } from '@capacitor-community/safe-area';
 
 /** Home screens — pressing back here exits the app. */
 const HOME_ROUTES = ['/', '/admin'];
@@ -26,13 +26,12 @@ export function NativeBridge() {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
 
-    // Android 15+ (targetSdk 36) forces edge-to-edge, so let the WebView draw
-    // under the status bar (overlay: true) and report safe-area insets — the
-    // layout's `pt-safe` padding then keeps the header below the status bar.
-    // Dark icons (Style.Light) read well over the light app background.
+    // @capacitor-community/safe-area handles edge-to-edge insets natively (it
+    // pads the WebView on Android WebViews that wrongly report 0px insets), so
+    // the header sits below the status bar. Here we only style the bar content:
+    // SystemBarsStyle.Light = dark icons, which read well on the light app shell.
     const applyStatusBar = () => {
-      StatusBar.setOverlaysWebView({ overlay: true }).catch(() => {});
-      StatusBar.setStyle({ style: Style.Light }).catch(() => {});
+      SafeArea.setSystemBarsStyle({ style: SystemBarsStyle.Light }).catch(() => {});
     };
     applyStatusBar();
 

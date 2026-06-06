@@ -7,6 +7,9 @@ const config: CapacitorConfig = {
   server: { androidScheme: 'https' },
   plugins: {
     SplashScreen: { launchShowDuration: 2000, backgroundColor: '#0f172a' },
+    // Let @capacitor-community/safe-area own the edge-to-edge inset handling so
+    // the header isn't hidden behind the status bar on Android 15+ WebViews.
+    SystemBars: { insetsHandling: 'disable' },
   },
 };
 
