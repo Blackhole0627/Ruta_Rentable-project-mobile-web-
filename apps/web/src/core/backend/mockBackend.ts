@@ -208,6 +208,12 @@ export class MockBackend implements BackendAdapter {
     await this.signOut();
   }
 
+  async getProfile(userId: string): Promise<UserProfile | null> {
+    await this.ready();
+    const user = await cloudDb.users.get(userId);
+    return user ? { ...user } : null;
+  }
+
   async pullData(userId: string): Promise<CloudSnapshot> {
     await this.ready();
     const user = await cloudDb.users.get(userId);

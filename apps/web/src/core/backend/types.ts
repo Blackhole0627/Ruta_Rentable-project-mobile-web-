@@ -64,6 +64,8 @@ export interface BackendAdapter {
   deleteAccount(): Promise<void>;
 
   // ---- Data sync ----
+  /** Fetch just the user's profile (plan/subscription state) from the cloud. */
+  getProfile(userId: string): Promise<UserProfile | null>;
   pullData(userId: string): Promise<CloudSnapshot>;
   pushData(userId: string, snapshot: CloudSnapshot): Promise<void>;
   deleteRecords(userId: string, deletions: DeletionRecord[]): Promise<void>;

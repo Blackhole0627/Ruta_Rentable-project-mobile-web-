@@ -34,10 +34,26 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
     const plans = await backend.listPlans();
     if (user) {
       // Tolerate per-user fetch failures (e.g. RLS) without breaking the page.
-      const [subscription, payments] = await Promise.all([
+      const [profile, subscription, payments] = await Promise.all([
+        backend.getProfile(user.id).catch(() => null),
         backend.getSubscription(user.id).catch(() => null),
         backend.listPayments(user.id).catch(() => []),
       ]);
+      // The admin may have approved a payment server-side, flipping the plan.
+      // Pull that back into the local user so "Plan actual" reflects reality.
+      if (
+        profile &&
+        (profile.currentPlan !== user.currentPlan ||
+          profile.subscriptionStatus !== user.subscriptionStatus ||
+          (profile.freeCalculationsUsed ?? 0) !== (user.freeCalculationsUsed ?? 0))
+      ) {
+        await useUserStore.getState().setUser({
+          ...user,
+          currentPlan: profile.currentPlan,
+          subscriptionStatus: profile.subscriptionStatus,
+          freeCalculationsUsed: profile.freeCalculationsUsed,
+        });
+      }
       set({ plans, subscription, payments, isLoading: false });
     } else {
       set({ plans, isLoading: false });

@@ -241,6 +241,27 @@ export class SupabaseBackend implements BackendAdapter {
     await this.signOut();
   }
 
+  async getProfile(userId: string): Promise<UserProfile | null> {
+    // Always scope to the authenticated user (robust against local id mismatch).
+    const { data: authData } = await this.client.auth.getUser();
+    const uid = authData.user?.id ?? userId;
+    const { data } = await this.client.from('users').select('*').eq('id', uid).maybeSingle();
+    if (!data) return null;
+    return {
+      id: data.id,
+      name: data.name ?? '',
+      currency: data.currency ?? 'NIO',
+      fuelUnit: data.fuel_unit ?? 'liter',
+      onboardingComplete: true,
+      registeredAt: new Date(data.registered_at),
+      email: data.email ?? undefined,
+      phone: data.phone ?? undefined,
+      subscriptionStatus: data.subscription_status ?? undefined,
+      currentPlan: data.current_plan ?? undefined,
+      freeCalculationsUsed: data.free_calculations_used ?? 0,
+    };
+  }
+
   async pullData(userId: string): Promise<CloudSnapshot> {
     const [profileRes, vehiclesRes, tripsRes] = await Promise.all([
       this.client.from('users').select('*').eq('id', userId).maybeSingle(),
