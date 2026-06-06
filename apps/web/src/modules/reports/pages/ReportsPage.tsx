@@ -22,7 +22,7 @@ import { startOfDay, startOfWeek, startOfMonth, isAfter } from 'date-fns';
 import { LoadingSkeleton } from '@/shared/components/LoadingSkeleton';
 import { cn } from '@/shared/utils/cn';
 import type { TripStatus } from '@shared/financial-model/profitability';
-import { downloadCsv, printReport } from '@/shared/utils/export';
+import { downloadCsv, exportReportPdf } from '@/shared/utils/export';
 import { AppIcons } from '@/shared/constants/icons';
 import type { Platform } from '@shared/types/trip.types';
 import { useI18n } from '@/core/i18n/i18n';
@@ -161,43 +161,42 @@ export function ReportsPage() {
 
   const handleExportPdf = () => {
     const currency = user?.currency ?? 'NIO';
-    const kpiCards = [
-      { label: t('Ingresos'), value: formatCurrency(kpis.income, currency, { compact: true }) },
-      { label: t('Costos'), value: formatCurrency(kpis.costs, currency, { compact: true }) },
-      { label: t('Ganancia'), value: formatCurrency(kpis.profit, currency, { compact: true }) },
-      { label: t('Margen prom.'), value: formatPercent(kpis.avgMargin) },
-      { label: t('Km totales'), value: kpis.km.toFixed(0) },
-      { label: t('Viajes'), value: String(kpis.count) },
-    ]
-      .map((k) => `<div class="kpi"><div class="label">${k.label}</div><div class="value">${k.value}</div></div>`)
-      .join('');
-    const platformRows = byPlatform
-      .map((p) => `<tr><td>${p.platform}</td><td>${formatCurrency(p.profit, currency, { compact: true })}</td></tr>`)
-      .join('');
-    const tripRows = filtered
-      .slice(0, 60)
-      .map(
-        (tr) =>
-          `<tr><td>${formatDateShort(new Date(tr.createdAt), lang)}</td>` +
-          `<td>${t(PLATFORM_LABELS[tr.platform as Platform])}</td>` +
-          `<td>${tr.totalKm}</td>` +
-          `<td>${formatCurrency(tr.fareCharged, currency, { compact: true })}</td>` +
-          `<td>${formatCurrency(tr.netProfit, currency, { compact: true })}</td>` +
-          `<td>${statusLabel(tr.status)}</td></tr>`,
-      )
-      .join('');
-    printReport(
-      `${t('Reportes')} — ${periodLabel}`,
-      `<h1>${t('Reportes')} — ${periodLabel}</h1>
-       <div class="sub">${t('Resumen')}</div>
-       <div class="kpis">${kpiCards}</div>
-       <h3>${t('Ganancia promedio por plataforma')}</h3>
-       <table><thead><tr><th>${t('Plataforma')}</th><th>${t('Ganancia')}</th></tr></thead>
-       <tbody>${platformRows || '<tr><td colspan="2">—</td></tr>'}</tbody></table>
-       <h3>${t('Reporte de viajes')}</h3>
-       <table><thead><tr><th>${t('Fecha')}</th><th>${t('Plataforma')}</th><th>${t('Km')}</th><th>${t('Tarifa')}</th><th>${t('Ganancia')}</th><th>${t('Estado')}</th></tr></thead>
-       <tbody>${tripRows || '<tr><td colspan="6">—</td></tr>'}</tbody></table>`,
-      { lang, watermark: 'RutaRentable' },
+    exportReportPdf(
+      {
+        title: `${t('Reportes')} — ${periodLabel}`,
+        lang,
+        kpis: [
+          { label: t('Ingresos'), value: formatCurrency(kpis.income, currency, { compact: true }) },
+          { label: t('Costos'), value: formatCurrency(kpis.costs, currency, { compact: true }) },
+          { label: t('Ganancia'), value: formatCurrency(kpis.profit, currency, { compact: true }) },
+          { label: t('Margen prom.'), value: formatPercent(kpis.avgMargin) },
+          { label: t('Km totales'), value: kpis.km.toFixed(0) },
+          { label: t('Viajes'), value: String(kpis.count) },
+        ],
+        sections: [
+          {
+            heading: t('Ganancia promedio por plataforma'),
+            columns: [t('Plataforma'), t('Ganancia')],
+            rows: byPlatform.map((p) => [
+              p.platform,
+              formatCurrency(p.profit, currency, { compact: true }),
+            ]),
+          },
+          {
+            heading: t('Reporte de viajes'),
+            columns: [t('Fecha'), t('Plataforma'), t('Km'), t('Tarifa'), t('Ganancia'), t('Estado')],
+            rows: filtered.slice(0, 60).map((tr) => [
+              formatDateShort(new Date(tr.createdAt), lang),
+              t(PLATFORM_LABELS[tr.platform as Platform]),
+              tr.totalKm,
+              formatCurrency(tr.fareCharged, currency, { compact: true }),
+              formatCurrency(tr.netProfit, currency, { compact: true }),
+              statusLabel(tr.status),
+            ]),
+          },
+        ],
+      },
+      `reporte-${period}-${new Date().toISOString().slice(0, 10)}.pdf`,
     );
   };
 

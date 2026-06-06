@@ -24,12 +24,16 @@ export function NativeBridge() {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
 
-    // Status bar: solid white background with dark icons (matches the app shell).
-    StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {});
-    StatusBar.setStyle({ style: Style.Light }).catch(() => {});
-    StatusBar.setBackgroundColor({ color: '#ffffff' }).catch(() => {});
+    // Status bar: solid white background with dark icons (matches the app shell),
+    // and pushed below the system status bar so the header isn't clipped.
+    const applyStatusBar = () => {
+      StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {});
+      StatusBar.setStyle({ style: Style.Light }).catch(() => {});
+      StatusBar.setBackgroundColor({ color: '#ffffff' }).catch(() => {});
+    };
+    applyStatusBar();
 
-    const handle = CapApp.addListener('backButton', ({ canGoBack }) => {
+    const back = CapApp.addListener('backButton', ({ canGoBack }) => {
       const path = pathRef.current;
       if (ROOT_ROUTES.includes(path) || !canGoBack) {
         CapApp.exitApp();
@@ -38,8 +42,13 @@ export function NativeBridge() {
       }
     });
 
+    // Android sometimes drops the status-bar config when the app returns from the
+    // background, leaving the header hidden behind the status bar — reapply it.
+    const resume = CapApp.addListener('resume', applyStatusBar);
+
     return () => {
-      handle.then((h) => h.remove()).catch(() => {});
+      back.then((h) => h.remove()).catch(() => {});
+      resume.then((h) => h.remove()).catch(() => {});
     };
   }, [navigate]);
 
