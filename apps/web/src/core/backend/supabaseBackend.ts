@@ -25,9 +25,13 @@ import type {
   CoopInvite,
 } from '@shared/types/cooperative.types';
 import type { AppNotification } from '@shared/types/notification.types';
+import { Capacitor } from '@capacitor/core';
+import { SocialLogin } from '@capgo/capacitor-social-login';
 import type { BackendAdapter, CloudSnapshot, DeletionRecord } from './types';
-import { SUPABASE_URL, SUPABASE_ANON_KEY, isAdminEmail } from './config';
+import { SUPABASE_URL, SUPABASE_ANON_KEY, GOOGLE_WEB_CLIENT_ID, isAdminEmail } from './config';
 import { DEFAULT_PARAMS } from '../constants/defaultParams';
+
+let googleNativeReady = false;
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Row = Record<string, any>;
@@ -216,12 +220,41 @@ export class SupabaseBackend implements BackendAdapter {
   }
 
   async signInWithGoogle(): Promise<AuthSession | null> {
+    // Native (Android): show Google's own account-picker, get an ID token, and
+    // exchange it with Supabase — no browser redirect, the user stays in-app.
+    if (Capacitor.isNativePlatform()) {
+      if (!googleNativeReady) {
+        await SocialLogin.initialize({ google: { webClientId: GOOGLE_WEB_CLIENT_ID } });
+        googleNativeReady = true;
+      }
+      const res = await SocialLogin.login({
+        provider: 'google',
+        options: { scopes: ['email', 'profile'] },
+      });
+      const idToken =
+        'idToken' in res.result ? res.result.idToken : null;
+      if (!idToken) throw new Error('No se obtuvo el token de Google.');
+      const { data, error } = await this.client.auth.signInWithIdToken({
+        provider: 'google',
+        token: idToken,
+      });
+      if (error) throw error;
+      const s = data.session;
+      if (!s?.user?.email) throw new Error('No se pudo iniciar sesión con Google.');
+      return {
+        user: { id: s.user.id, email: s.user.email, role: await this.role(s.user.email) },
+        accessToken: s.access_token,
+        expiresAt: (s.expires_at ?? 0) * 1000,
+      };
+    }
+
+    // Web: standard OAuth redirect; the session is picked up on return.
     const { error } = await this.client.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: window.location.origin },
     });
     if (error) throw error;
-    return null; // browser redirects to Google; session is picked up on return
+    return null;
   }
 
   async requestPasswordRecovery(email: string): Promise<{ devCode?: string }> {

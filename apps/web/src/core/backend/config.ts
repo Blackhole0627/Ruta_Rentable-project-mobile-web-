@@ -4,6 +4,15 @@ export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as
   | string
   | undefined;
 
+/**
+ * Google OAuth *Web* client ID — public (not the secret). Used by the native
+ * Google Sign-In plugin to mint an ID token that Supabase then verifies. Same
+ * value configured in Supabase → Auth → Providers → Google.
+ */
+export const GOOGLE_WEB_CLIENT_ID =
+  (import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID as string | undefined) ??
+  '331595080324-b0fjr0uc189t99bu8sgqd0pjhud0cgtt.apps.googleusercontent.com';
+
 /** Emails that are granted the admin role in the mock backend (comma-separated). */
 const RAW_ADMIN_EMAILS =
   (import.meta.env.VITE_ADMIN_EMAILS as string | undefined) ??
