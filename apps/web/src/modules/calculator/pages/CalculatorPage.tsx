@@ -39,6 +39,7 @@ export function CalculatorPage() {
   const { plans, load: loadPlans } = useSubscriptionStore();
   const [form, setForm] = useState<CalculatorFormState>(initialForm('indrive'));
   const [showPaywall, setShowPaywall] = useState(false);
+  const [saved, setSaved] = useState(false);
   const result = useCalculator(form);
   const { t } = useI18n();
 
@@ -98,6 +99,12 @@ export function CalculatorPage() {
     };
     await saveTrip(trip);
     if (isAuthed && onFreePlan) await recordCalculation();
+    // Confirm the save with a tick, then clear the form for the next trip.
+    setSaved(true);
+    setTimeout(() => {
+      setForm(initialForm(form.platform));
+      setSaved(false);
+    }, 1300);
   };
 
   if (!vehicle) {
@@ -138,8 +145,22 @@ export function CalculatorPage() {
       {result && form.fareCharged > 0 && (
         <>
           <ProfitabilityResult result={result} currency={user?.currency ?? 'NIO'} />
-          <Button className="w-full" size="lg" onClick={handleSave}>
-            {t('Guardar viaje')}
+          <Button
+            className={`w-full transition-colors ${
+              saved ? 'bg-emerald-600 hover:bg-emerald-600' : ''
+            }`}
+            size="lg"
+            onClick={handleSave}
+            disabled={saved}
+          >
+            {saved ? (
+              <span className="flex items-center justify-center gap-2">
+                <AppIcons.check size={20} strokeWidth={3} className="animate-tick-pop" />
+                {t('Guardado')}
+              </span>
+            ) : (
+              t('Guardar viaje')
+            )}
           </Button>
         </>
       )}
