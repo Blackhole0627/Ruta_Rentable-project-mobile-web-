@@ -30,8 +30,21 @@ export function DatePicker({ value, onChange, placeholder, className }: DatePick
   const locale = lang === 'en' ? enUS : es;
   const selected = value ? parseISO(value) : null;
   const [open, setOpen] = useState(false);
+  const [alignRight, setAlignRight] = useState(false);
   const [view, setView] = useState<Date>(() => selected ?? new Date());
   const ref = useRef<HTMLDivElement>(null);
+
+  // Open the popup aligned to whichever side keeps it on screen (the calendar is
+  // wider than half the row, so a right-hand field would otherwise overflow and
+  // make the page scroll horizontally).
+  const toggle = () => {
+    if (!open && ref.current) {
+      const rect = ref.current.getBoundingClientRect();
+      const POPUP_W = 288; // w-72
+      setAlignRight(rect.left + POPUP_W > window.innerWidth - 8);
+    }
+    setOpen((o) => !o);
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -54,7 +67,7 @@ export function DatePicker({ value, onChange, placeholder, className }: DatePick
     <div ref={ref} className={cn('relative', className)}>
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={toggle}
         className="flex h-11 w-full items-center justify-between gap-2 rounded-lg border border-road-300 bg-white px-3 py-2 text-left text-base hover:border-road-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
       >
         <span className={cn('truncate', !selected && 'text-road-400')}>
@@ -66,7 +79,12 @@ export function DatePicker({ value, onChange, placeholder, className }: DatePick
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} role="presentation" />
-          <div className="absolute z-50 mt-1 w-72 rounded-xl border border-road-200 bg-white p-3 shadow-xl">
+          <div
+            className={cn(
+              'absolute z-50 mt-1 w-72 max-w-[calc(100vw-1rem)] rounded-xl border border-road-200 bg-white p-3 shadow-xl',
+              alignRight ? 'right-0' : 'left-0',
+            )}
+          >
             <div className="mb-2 flex items-center justify-between">
               <button
                 type="button"
