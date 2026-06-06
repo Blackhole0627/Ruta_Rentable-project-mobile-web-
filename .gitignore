@@ -22,7 +22,8 @@ RutaRentable_Master_Prompt.md
 requirement(yamamoto) (1).docx
 *.docx
 
-# Database migrations & seed data — managed/applied directly on Supabase,
-# kept out of the repo (Edge Functions under supabase/functions stay tracked)
+# Database migrations — applied directly on Supabase, kept out of the repo.
+# NOTE: supabase/seed/ stays tracked — the web app imports those JSON files
+# at build time (apps/web/src/core/constants/catalog.ts), so removing them
+# breaks the Vercel build. Edge Functions under supabase/functions also stay.
 supabase/migrations/
-supabase/seed/
