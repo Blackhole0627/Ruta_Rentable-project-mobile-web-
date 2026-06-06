@@ -1,8 +1,16 @@
 import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { es, enUS } from 'date-fns/locale';
 
-export function formatDate(date: Date): string {
-  return format(date, "d MMM yyyy, HH:mm", { locale: es });
+export type DateLang = 'es' | 'en';
+
+/** Full date + time, localized to the chosen language (defaults to Spanish). */
+export function formatDate(date: Date, lang: DateLang = 'es'): string {
+  return format(date, 'd MMM yyyy, HH:mm', { locale: lang === 'en' ? enUS : es });
+}
+
+/** Date only (no time) — used for CSV / PDF exports. */
+export function formatDateShort(date: Date, lang: DateLang = 'es'): string {
+  return format(date, 'd MMM yyyy', { locale: lang === 'en' ? enUS : es });
 }
 
 export function formatPercent(decimal: number): string {

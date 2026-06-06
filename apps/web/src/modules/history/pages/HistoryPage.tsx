@@ -4,7 +4,7 @@ import { useUserStore } from '@/core/store/useUserStore';
 import { useSettingsStore } from '@/core/store/useSettingsStore';
 import { StatusBadge } from '@/shared/components/StatusBadge';
 import { formatCurrency } from '@/shared/utils/currency';
-import { formatDate } from '@/shared/utils/formatters';
+import { formatDate, formatDateShort } from '@/shared/utils/formatters';
 import { PLATFORM_LABELS, PLATFORMS } from '@/core/constants/platforms';
 import type { TripStatus } from '@shared/financial-model/profitability';
 import { classifyTrip } from '@shared/financial-model/profitability';
@@ -106,22 +106,35 @@ export function HistoryPage() {
   );
 
   const currency = user?.currency ?? 'NIO';
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+
+  const statusLabel = (s: string) =>
+    s === 'profitable' ? t('Rentable') : s === 'acceptable' ? t('Aceptable') : t('No rentable');
 
   const handleExportCsv = () => {
     downloadCsv(
       `viajes-${new Date().toISOString().slice(0, 10)}.csv`,
-      ['Fecha', 'Plataforma', 'Km', 'Tarifa', 'Comisión %', 'Costo total', 'Ganancia', 'Margen', 'Estado'],
-      filtered.map((t) => [
-        formatDate(new Date(t.createdAt)),
-        PLATFORM_LABELS[t.platform as Platform],
-        t.totalKm,
-        t.fareCharged.toFixed(2),
-        t.commissionPct,
-        t.totalTripCost.toFixed(2),
-        t.netProfit.toFixed(2),
-        formatPercent(t.margin),
-        t.status,
+      [
+        t('Fecha'),
+        t('Plataforma'),
+        t('Km'),
+        t('Tarifa'),
+        t('Comisión %'),
+        t('Costo total'),
+        t('Ganancia'),
+        t('Margen'),
+        t('Estado'),
+      ],
+      filtered.map((trip) => [
+        formatDateShort(new Date(trip.createdAt), lang),
+        t(PLATFORM_LABELS[trip.platform as Platform]),
+        trip.totalKm,
+        trip.fareCharged.toFixed(2),
+        trip.commissionPct,
+        trip.totalTripCost.toFixed(2),
+        trip.netProfit.toFixed(2),
+        formatPercent(trip.margin),
+        statusLabel(trip.status),
       ]),
     );
   };
@@ -224,7 +237,7 @@ export function HistoryPage() {
             <li key={trip.id} className="rounded-lg bg-white p-4 shadow-sm">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs text-road-500">{formatDate(new Date(trip.createdAt))}</p>
+                  <p className="text-xs text-road-500">{formatDate(new Date(trip.createdAt), lang)}</p>
                   <p className="font-medium">{t(PLATFORM_LABELS[trip.platform as Platform])}</p>
                   <p className="text-sm text-road-500">
                     {trip.totalKm} km · {formatCurrency(trip.fareCharged, currency, { compact: true })}

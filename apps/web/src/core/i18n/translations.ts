@@ -4,6 +4,14 @@
  * Use `{name}`-style placeholders for interpolation.
  */
 export const EN: Record<string, string> = {
+  // Reports / export columns
+  Fecha: 'Date',
+  Km: 'Km',
+  Tarifa: 'Fare',
+  'Comisión %': 'Commission %',
+  'Reporte de viajes': 'Trip report',
+  Resumen: 'Summary',
+
   // Bottom nav
   Calcular: 'Calculate',
   Historial: 'History',

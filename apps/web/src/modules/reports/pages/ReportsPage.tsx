@@ -9,12 +9,14 @@ import {
   PieChart,
   Pie,
   Cell,
+  CartesianGrid,
+  Legend,
 } from 'recharts';
 import { useTripStore } from '@/core/store/useTripStore';
 import { useUserStore } from '@/core/store/useUserStore';
 import { useVehicleStore } from '@/core/store/useVehicleStore';
 import { formatCurrency } from '@/shared/utils/currency';
-import { formatPercent } from '@/shared/utils/formatters';
+import { formatPercent, formatDateShort } from '@/shared/utils/formatters';
 import { PLATFORM_LABELS, PLATFORMS } from '@/core/constants/platforms';
 import { startOfDay, startOfWeek, startOfMonth, isAfter } from 'date-fns';
 import { LoadingSkeleton } from '@/shared/components/LoadingSkeleton';
@@ -39,7 +41,8 @@ export function ReportsPage() {
   const { trips, loadTrips, isLoading } = useTripStore();
   const { user } = useUserStore();
   const { vehicle, loadVehicles } = useVehicleStore();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const locale = lang === 'en' ? 'en-US' : 'es-NI';
   const [period, setPeriod] = useState<Period>('week');
 
   useEffect(() => {
@@ -84,13 +87,26 @@ export function ReportsPage() {
   }, [filtered, vehicle, period]);
 
   const profitByDay = useMemo(() => {
-    const map = new Map<string, number>();
-    filtered.forEach((t) => {
-      const key = new Date(t.createdAt).toLocaleDateString('es-NI', { weekday: 'short' });
-      map.set(key, (map.get(key) ?? 0) + t.netProfit);
+    const sums = new Array(7).fill(0);
+    const counts = new Array(7).fill(0);
+    filtered.forEach((tr) => {
+      const d = new Date(tr.createdAt).getDay(); // 0=Sun … 6=Sat
+      sums[d] += tr.netProfit;
+      counts[d] += 1;
     });
-    return Array.from(map.entries()).map(([day, profit]) => ({ day, profit }));
-  }, [filtered]);
+    // Conventional Mon→Sun layout with weekday labels in the active language.
+    const order = [1, 2, 3, 4, 5, 6, 0];
+    return order
+      .map((d) => {
+        const ref = new Date(2024, 0, 7 + d); // Jan 7 2024 is a Sunday
+        return {
+          day: ref.toLocaleDateString(locale, { weekday: 'short' }),
+          profit: Math.round(sums[d]),
+          count: counts[d],
+        };
+      })
+      .filter((e) => e.count > 0);
+  }, [filtered, locale]);
 
   const byPlatform = useMemo(() => {
     return PLATFORMS.map((p) => {
@@ -123,19 +139,22 @@ export function ReportsPage() {
 
   const periodLabel = period === 'day' ? t('Hoy') : period === 'week' ? t('Semana') : t('Mes');
 
+  const statusLabel = (s: string) =>
+    s === 'profitable' ? t('Rentable') : s === 'acceptable' ? t('Aceptable') : t('No rentable');
+
   const handleExportCsv = () => {
     downloadCsv(
       `reporte-${period}-${new Date().toISOString().slice(0, 10)}.csv`,
-      ['Fecha', 'Plataforma', 'Km', 'Tarifa', 'Costo', 'Ganancia', 'Margen', 'Estado'],
-      filtered.map((t) => [
-        new Date(t.createdAt).toLocaleDateString('es-NI'),
-        PLATFORM_LABELS[t.platform as Platform],
-        t.totalKm,
-        t.fareCharged.toFixed(2),
-        t.totalTripCost.toFixed(2),
-        t.netProfit.toFixed(2),
-        formatPercent(t.margin),
-        t.status,
+      [t('Fecha'), t('Plataforma'), t('Km'), t('Tarifa'), t('Costo total'), t('Ganancia'), t('Margen'), t('Estado')],
+      filtered.map((tr) => [
+        formatDateShort(new Date(tr.createdAt), lang),
+        t(PLATFORM_LABELS[tr.platform as Platform]),
+        tr.totalKm,
+        tr.fareCharged.toFixed(2),
+        tr.totalTripCost.toFixed(2),
+        tr.netProfit.toFixed(2),
+        formatPercent(tr.margin),
+        statusLabel(tr.status),
       ]),
     );
   };
@@ -155,14 +174,30 @@ export function ReportsPage() {
     const platformRows = byPlatform
       .map((p) => `<tr><td>${p.platform}</td><td>${formatCurrency(p.profit, currency, { compact: true })}</td></tr>`)
       .join('');
+    const tripRows = filtered
+      .slice(0, 60)
+      .map(
+        (tr) =>
+          `<tr><td>${formatDateShort(new Date(tr.createdAt), lang)}</td>` +
+          `<td>${t(PLATFORM_LABELS[tr.platform as Platform])}</td>` +
+          `<td>${tr.totalKm}</td>` +
+          `<td>${formatCurrency(tr.fareCharged, currency, { compact: true })}</td>` +
+          `<td>${formatCurrency(tr.netProfit, currency, { compact: true })}</td>` +
+          `<td>${statusLabel(tr.status)}</td></tr>`,
+      )
+      .join('');
     printReport(
-      `${t('Reportes')} ${periodLabel} — RutaRentable`,
+      `${t('Reportes')} — ${periodLabel}`,
       `<h1>${t('Reportes')} — ${periodLabel}</h1>
-       <div class="sub">${new Date().toLocaleDateString('es-NI')}</div>
+       <div class="sub">${t('Resumen')}</div>
        <div class="kpis">${kpiCards}</div>
        <h3>${t('Ganancia promedio por plataforma')}</h3>
        <table><thead><tr><th>${t('Plataforma')}</th><th>${t('Ganancia')}</th></tr></thead>
-       <tbody>${platformRows || '<tr><td colspan="2">—</td></tr>'}</tbody></table>`,
+       <tbody>${platformRows || '<tr><td colspan="2">—</td></tr>'}</tbody></table>
+       <h3>${t('Reporte de viajes')}</h3>
+       <table><thead><tr><th>${t('Fecha')}</th><th>${t('Plataforma')}</th><th>${t('Km')}</th><th>${t('Tarifa')}</th><th>${t('Ganancia')}</th><th>${t('Estado')}</th></tr></thead>
+       <tbody>${tripRows || '<tr><td colspan="6">—</td></tr>'}</tbody></table>`,
+      { lang, watermark: 'RutaRentable' },
     );
   };
 
@@ -274,42 +309,101 @@ export function ReportsPage() {
       )}
 
       {profitByDay.length > 0 && (
-        <div className="rounded-lg bg-white p-4 shadow-sm">
-          <p className="mb-2 text-sm font-medium">{t('Ganancia por día')}</p>
-          <ResponsiveContainer width="100%" height={160}>
-            <BarChart data={profitByDay}>
-              <XAxis dataKey="day" tick={{ fontSize: 10 }} />
-              <YAxis tick={{ fontSize: 10 }} />
-              <Tooltip formatter={(v) => formatCurrency(Number(v), currency)} />
-              <Bar dataKey="profit" fill="#22c55e" radius={[4, 4, 0, 0]} />
+        <div className="rounded-xl bg-white p-4 shadow-sm">
+          <p className="mb-3 text-sm font-semibold text-road-700">{t('Ganancia por día')}</p>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={profitByDay} margin={{ top: 8, right: 8, left: -6, bottom: 0 }}>
+              <defs>
+                <linearGradient id="barGreen" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#22c55e" />
+                  <stop offset="100%" stopColor="#16a34a" />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eef2f7" />
+              <XAxis
+                dataKey="day"
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 11, fill: '#64748b' }}
+              />
+              <YAxis
+                width={48}
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 10, fill: '#94a3b8' }}
+                tickFormatter={(v) => formatCurrency(Number(v), currency, { compact: true })}
+              />
+              <Tooltip
+                cursor={{ fill: 'rgba(34,197,94,0.08)' }}
+                contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 12 }}
+                formatter={(v) => [formatCurrency(Number(v), currency), t('Ganancia')]}
+              />
+              <Bar dataKey="profit" fill="url(#barGreen)" radius={[6, 6, 0, 0]} maxBarSize={46} />
             </BarChart>
           </ResponsiveContainer>
         </div>
       )}
       {statusDist.length > 0 && (
-        <div className="rounded-lg bg-white p-4 shadow-sm">
-          <p className="mb-2 text-sm font-medium">{t('Distribución')}</p>
-          <ResponsiveContainer width="100%" height={160}>
+        <div className="rounded-xl bg-white p-4 shadow-sm">
+          <p className="mb-3 text-sm font-semibold text-road-700">{t('Distribución')}</p>
+          <ResponsiveContainer width="100%" height={210}>
             <PieChart>
-              <Pie data={statusDist} dataKey="value" innerRadius={40} outerRadius={60}>
+              <Pie
+                data={statusDist}
+                dataKey="value"
+                nameKey="name"
+                innerRadius={52}
+                outerRadius={78}
+                paddingAngle={2}
+                strokeWidth={0}
+                label={({ percent }) => `${Math.round((percent ?? 0) * 100)}%`}
+                labelLine={false}
+              >
                 {statusDist.map((entry, i) => (
                   <Cell key={i} fill={entry.fill} />
                 ))}
               </Pie>
-              <Tooltip />
+              <Tooltip
+                contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 12 }}
+                formatter={(v, n) => [`${v} ${t('Viajes').toLowerCase()}`, String(n)]}
+              />
+              <Legend
+                verticalAlign="bottom"
+                height={28}
+                iconType="circle"
+                wrapperStyle={{ fontSize: 12 }}
+              />
             </PieChart>
           </ResponsiveContainer>
         </div>
       )}
       {byPlatform.length > 0 && (
-        <div className="rounded-lg bg-white p-4 shadow-sm">
-          <p className="mb-2 text-sm font-medium">{t('Ganancia por plataforma')}</p>
-          <ResponsiveContainer width="100%" height={byPlatform.length * 36}>
-            <BarChart data={byPlatform} layout="vertical">
-              <XAxis type="number" tick={{ fontSize: 10 }} />
-              <YAxis type="category" dataKey="platform" width={70} tick={{ fontSize: 10 }} />
-              <Tooltip formatter={(v) => formatCurrency(Number(v), currency)} />
-              <Bar dataKey="profit" fill="#22c55e" radius={[0, 4, 4, 0]} />
+        <div className="rounded-xl bg-white p-4 shadow-sm">
+          <p className="mb-3 text-sm font-semibold text-road-700">{t('Ganancia por plataforma')}</p>
+          <ResponsiveContainer width="100%" height={byPlatform.length * 44 + 16}>
+            <BarChart data={byPlatform} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#eef2f7" />
+              <XAxis
+                type="number"
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 10, fill: '#94a3b8' }}
+                tickFormatter={(v) => formatCurrency(Number(v), currency, { compact: true })}
+              />
+              <YAxis
+                type="category"
+                dataKey="platform"
+                width={76}
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 11, fill: '#64748b' }}
+              />
+              <Tooltip
+                cursor={{ fill: 'rgba(34,197,94,0.08)' }}
+                contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 12 }}
+                formatter={(v) => [formatCurrency(Number(v), currency), t('Ganancia')]}
+              />
+              <Bar dataKey="profit" fill="#22c55e" radius={[0, 6, 6, 0]} maxBarSize={26} />
             </BarChart>
           </ResponsiveContainer>
         </div>
