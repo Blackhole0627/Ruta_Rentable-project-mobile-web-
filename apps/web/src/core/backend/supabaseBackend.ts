@@ -210,8 +210,18 @@ export class SupabaseBackend implements BackendAdapter {
       options: { data: { name: name.trim(), full_name: name.trim() } },
     });
     if (error) throw error;
-    const s = data.session;
-    if (!s?.user?.email) return null; // email confirmation required → OTP step
+    let s = data.session;
+    // Email confirmation is skipped for now: log the user in right away. If
+    // signUp didn't return a session, complete it with a password sign-in.
+    // (Requires "Confirm email" disabled in Supabase Auth settings.)
+    if (!s?.user?.email) {
+      const { data: signInData } = await this.client.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+      s = signInData.session;
+    }
+    if (!s?.user?.email) return null;
     return {
       user: { id: s.user.id, email: s.user.email, role: await this.role(s.user.email) },
       accessToken: s.access_token,

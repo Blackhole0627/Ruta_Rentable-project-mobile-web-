@@ -70,11 +70,13 @@ export function LoginPage() {
     if (!canSignUp) return;
     const result = await signUp(name, email, password);
     if (result === 'done') gotoHome();
-    else if (result === 'otp') {
-      // Email confirmation required — verify the code sent to the inbox.
-      setMode('otp');
-      setStep('code');
-    }
+    // Verify-code (email confirmation) step skipped for now — the account is
+    // created and the user is logged in directly. Re-enable this if Supabase
+    // "Confirm email" is turned back on.
+    // else if (result === 'otp') {
+    //   setMode('otp');
+    //   setStep('code');
+    // }
   };
 
   const switchMode = (next: Mode) => {
