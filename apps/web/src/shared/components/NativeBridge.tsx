@@ -4,8 +4,10 @@ import { Capacitor } from '@capacitor/core';
 import { App as CapApp } from '@capacitor/app';
 import { StatusBar, Style } from '@capacitor/status-bar';
 
-/** Root-level routes where pressing back should exit the app, not navigate. */
-const ROOT_ROUTES = ['/', '/historial', '/reportes', '/vehiculo', '/ajustes', '/admin'];
+/** Home screens — pressing back here exits the app. */
+const HOME_ROUTES = ['/', '/admin'];
+/** Bottom-nav tabs — pressing back here returns to home first. */
+const TAB_ROUTES = ['/historial', '/reportes', '/vehiculo', '/ajustes'];
 
 /**
  * Native (Capacitor) integration: themes the status bar and routes the Android
@@ -24,21 +26,26 @@ export function NativeBridge() {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
 
-    // Status bar: solid white background with dark icons (matches the app shell),
-    // and pushed below the system status bar so the header isn't clipped.
+    // Android 15+ (targetSdk 36) forces edge-to-edge, so let the WebView draw
+    // under the status bar (overlay: true) and report safe-area insets — the
+    // layout's `pt-safe` padding then keeps the header below the status bar.
+    // Dark icons (Style.Light) read well over the light app background.
     const applyStatusBar = () => {
-      StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {});
+      StatusBar.setOverlaysWebView({ overlay: true }).catch(() => {});
       StatusBar.setStyle({ style: Style.Light }).catch(() => {});
-      StatusBar.setBackgroundColor({ color: '#ffffff' }).catch(() => {});
     };
     applyStatusBar();
 
     const back = CapApp.addListener('backButton', ({ canGoBack }) => {
       const path = pathRef.current;
-      if (ROOT_ROUTES.includes(path) || !canGoBack) {
-        CapApp.exitApp();
+      if (HOME_ROUTES.includes(path)) {
+        CapApp.exitApp(); // home → close the app
+      } else if (TAB_ROUTES.includes(path)) {
+        navigate('/'); // a bottom-nav tab → back to home
+      } else if (canGoBack) {
+        navigate(-1); // any sub-screen → previous screen
       } else {
-        navigate(-1);
+        navigate('/'); // fallback → home
       }
     });
 
