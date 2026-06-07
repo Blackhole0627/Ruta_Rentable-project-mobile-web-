@@ -761,11 +761,12 @@ export class SupabaseBackend implements BackendAdapter {
   }
 
   async leaveCooperative(userId: string, coopId: string): Promise<void> {
-    await this.client
-      .from('coop_members')
-      .delete()
-      .eq('coop_id', coopId)
-      .eq('user_id', userId);
+    void userId; // resolved server-side via auth.uid()/email in the RPC.
+    // A direct delete only matches user_id = auth.uid() (and RLS hides the rest),
+    // so a driver invited by email could never leave. The SECURITY DEFINER RPC
+    // removes the membership by the same predicate as my_cooperative.
+    const { error } = await this.client.rpc('leave_cooperative', { p_coop_id: coopId });
+    if (error) throw error;
   }
 
   async getFleetReport(coopId: string): Promise<FleetReport> {
