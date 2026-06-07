@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
@@ -7,6 +7,7 @@ import { Badge } from '@/shared/components/ui/badge';
 import { useAuthStore } from '@/core/store/useAuthStore';
 import { useSyncStore } from '@/core/store/useSyncStore';
 import { useUserStore } from '@/core/store/useUserStore';
+import { useSubscriptionStore } from '@/core/store/useSubscriptionStore';
 import { useOnlineStatus } from '@/shared/hooks/useOnlineStatus';
 import { AppIcons, iconPropsLg, iconPropsSm } from '@/shared/constants/icons';
 import { formatDate } from '@/shared/utils/formatters';
@@ -24,9 +25,21 @@ export function AccountPage() {
   const { session, status, signOut, deleteAccount, isWorking } = useAuthStore();
   const { sync, status: syncStatus, lastSyncedAt } = useSyncStore();
   const { user } = useUserStore();
+  const { plans, load: loadPlans } = useSubscriptionStore();
   const { t } = useI18n();
   const isOnline = useOnlineStatus();
   const [confirmDelete, setConfirmDelete] = useState(false);
+
+  // Plans carry the human name; currentPlan is stored as the plan id (a UUID
+  // once a payment is approved), so load them to resolve the label.
+  useEffect(() => {
+    if (plans.length === 0) loadPlans();
+  }, [plans.length, loadPlans]);
+
+  const planId = user?.currentPlan ?? 'free';
+  const planLabel =
+    plans.find((p) => p.id === planId)?.name ??
+    (planId === 'free' ? t('Gratis') : planId);
 
   if (status !== 'authenticated' || !session) {
     return (
@@ -64,7 +77,7 @@ export function AccountPage() {
           </div>
           <div className="flex justify-between">
             <span className="text-road-500">{t('Plan')}</span>
-            <Badge variant="profitable">{user?.currentPlan ?? 'free'}</Badge>
+            <Badge variant="profitable">{planLabel}</Badge>
           </div>
           <div className="flex justify-between">
             <span className="text-road-500">{t('Estado')}</span>
