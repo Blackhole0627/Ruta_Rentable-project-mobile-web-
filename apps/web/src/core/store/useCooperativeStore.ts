@@ -8,6 +8,22 @@ import type {
 } from '@shared/types/cooperative.types';
 import { getBackend } from '../backend';
 import { useUserStore } from './useUserStore';
+import { useAuthStore } from './useAuthStore';
+import { errMessage } from '@/shared/utils/errorMessage';
+
+/**
+ * The authenticated user id. Prefer the auth session (always the real
+ * `auth.uid()`) over the local Dexie profile, whose id can drift from the
+ * auth id for accounts onboarded offline. RLS keys off `auth.uid()`, so using
+ * a stale local id here makes inserts/updates silently fail.
+ */
+function authUserId(): string | null {
+  return (
+    useAuthStore.getState().session?.user.id ??
+    useUserStore.getState().user?.id ??
+    null
+  );
+}
 
 const backend = getBackend();
 
@@ -39,44 +55,42 @@ export const useCooperativeStore = create<CooperativeState>((set, get) => ({
   isAdmin: false,
 
   load: async () => {
-    const user = useUserStore.getState().user;
-    if (!user) {
+    const userId = authUserId();
+    if (!userId) {
       set({ coop: null, report: null, invites: [], isAdmin: false });
       return;
     }
     set({ isLoading: true, error: null });
     try {
       const [coop, invites] = await Promise.all([
-        backend.getMyCooperative(user.id),
-        backend.listPendingInvites(user.id),
+        backend.getMyCooperative(userId),
+        backend.listPendingInvites(userId),
       ]);
       if (!coop) {
         set({ coop: null, report: null, invites, isAdmin: false, isLoading: false });
         return;
       }
       // Only the admin can read the whole fleet (RLS); members skip the report.
-      const isAdmin = coop.adminId === user.id;
+      const isAdmin = coop.adminId === userId;
       const report = isAdmin ? await backend.getFleetReport(coop.id) : null;
       set({ coop, report, invites, isAdmin, isLoading: false });
     } catch (err) {
       set({
         isLoading: false,
-        error: err instanceof Error ? err.message : 'Error al cargar la cooperativa.',
+        error: errMessage(err, 'Error al cargar la cooperativa.'),
       });
     }
   },
 
   create: async (name) => {
-    const user = useUserStore.getState().user;
-    if (!user || !name.trim()) return;
+    const userId = authUserId();
+    if (!userId || !name.trim()) return;
     set({ error: null });
     try {
-      await backend.createCooperative(user.id, name);
+      await backend.createCooperative(userId, name);
       await get().load();
     } catch (err) {
-      set({
-        error: err instanceof Error ? err.message : 'No se pudo crear la cooperativa.',
-      });
+      set({ error: errMessage(err, 'No se pudo crear la cooperativa.') });
     }
   },
 
@@ -99,11 +113,16 @@ export const useCooperativeStore = create<CooperativeState>((set, get) => ({
   },
 
   leave: async () => {
-    const user = useUserStore.getState().user;
+    const userId = authUserId();
     const { coop } = get();
-    if (!user || !coop) return;
-    await backend.leaveCooperative(user.id, coop.id);
-    await get().load();
+    if (!userId || !coop) return;
+    set({ error: null });
+    try {
+      await backend.leaveCooperative(userId, coop.id);
+      await get().load();
+    } catch (err) {
+      set({ error: errMessage(err, 'No se pudo salir de la cooperativa.') });
+    }
   },
 
   updateParams: async (params) => {

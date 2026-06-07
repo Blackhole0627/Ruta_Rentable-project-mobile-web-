@@ -193,6 +193,12 @@ export function CooperativePage() {
           </CardContent>
         </Card>
 
+        {error && (
+          <div className="rounded-lg border border-danger-500/30 bg-red-50 p-3 text-sm text-danger-500">
+            {error}
+          </div>
+        )}
+
         <Button
           variant="outline"
           className="w-full text-danger-500"

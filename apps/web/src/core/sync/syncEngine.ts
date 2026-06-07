@@ -57,6 +57,19 @@ export async function syncNow(userId: string): Promise<SyncResult> {
     );
   }
 
+  // 0b. Rebind the local profile to the authenticated id. The whole app — RLS
+  // (admin_id = auth.uid()), cooperative admin checks — assumes
+  // user.id === auth.uid(). A profile created offline (no email, so the
+  // account-switch guard above leaves it alone) keeps a local random id until
+  // we rebind it here; otherwise writes keyed off user.id are rejected by RLS.
+  const drifted = (await db.users.toArray())[0];
+  if (drifted && drifted.id !== userId) {
+    await db.transaction('rw', db.users, async () => {
+      await db.users.delete(drifted.id);
+      await db.users.put({ ...drifted, id: userId });
+    });
+  }
+
   // 1. Flush queued deletions to the cloud.
   const deletions = await db.deletions.toArray();
   if (deletions.length) {
