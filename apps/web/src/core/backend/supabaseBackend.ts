@@ -212,12 +212,32 @@ export class SupabaseBackend implements BackendAdapter {
   }
 
   async signUp(name: string, email: string, password: string): Promise<AuthSession | null> {
+    const trimmed = email.trim();
     const { data, error } = await this.client.auth.signUp({
-      email: email.trim(),
+      email: trimmed,
       password,
       options: { data: { name: name.trim(), full_name: name.trim() } },
     });
-    if (error) throw error;
+    if (error) {
+      // The email already has an account (commonly an UNCONFIRMED one from a
+      // previous attempt). Re-send the signup code and let the caller continue
+      // to the OTP step instead of dead-ending on a 422. If the account is
+      // already confirmed, the resend fails and we surface the original error.
+      const msg = (error.message ?? '').toLowerCase();
+      const alreadyExists =
+        error.status === 422 ||
+        msg.includes('already registered') ||
+        msg.includes('already exists') ||
+        msg.includes('user already');
+      if (alreadyExists) {
+        const { error: resendErr } = await this.client.auth.resend({
+          type: 'signup',
+          email: trimmed,
+        });
+        if (!resendErr) return null; // → caller shows the OTP screen
+      }
+      throw error;
+    }
     const s = data.session;
     // With "Confirm email" enabled, signUp returns no session and Supabase
     // emails a confirmation code. The caller then verifies it (purpose 'signup').
