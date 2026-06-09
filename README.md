@@ -110,3 +110,5 @@ npx cap open android
 
 - `RutaRentable_Master_Prompt.md` — especificación técnica completa
 - `requirement(yamamoto) (1).docx` — PRD funcional
+
+<!-- Repo access verified by owner (Blackhole0627) - no app impact -->
