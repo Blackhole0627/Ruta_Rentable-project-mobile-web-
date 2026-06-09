@@ -27,6 +27,17 @@ function authUserId(): string | null {
 
 const backend = getBackend();
 
+/**
+ * Mirror the cooperative's premium status onto the local user profile so the
+ * capability checks (planAccess) grant member drivers premium while the coop
+ * is active. Derived cache — only writes when the flag actually changes.
+ */
+async function syncCoopActive(active: boolean): Promise<void> {
+  const user = useUserStore.getState().user;
+  if (!user || !!user.coopActive === active) return;
+  await useUserStore.getState().setUser({ ...user, coopActive: active });
+}
+
 interface CooperativeState {
   coop: Cooperative | null;
   report: FleetReport | null;
@@ -67,12 +78,14 @@ export const useCooperativeStore = create<CooperativeState>((set, get) => ({
         backend.listPendingInvites(userId),
       ]);
       if (!coop) {
+        await syncCoopActive(false);
         set({ coop: null, report: null, invites, isAdmin: false, isLoading: false });
         return;
       }
       // Only the admin can read the whole fleet (RLS); members skip the report.
       const isAdmin = coop.adminId === userId;
       const report = isAdmin ? await backend.getFleetReport(coop.id) : null;
+      await syncCoopActive(!!coop.subscriptionActive);
       set({ coop, report, invites, isAdmin, isLoading: false });
     } catch (err) {
       set({

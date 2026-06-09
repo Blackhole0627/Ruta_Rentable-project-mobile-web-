@@ -51,15 +51,30 @@ export interface BackendAdapter {
   getSession(): Promise<AuthSession | null>;
   /** Request an OTP code by email. Mock returns the code for the dev UI. */
   requestOtp(email: string): Promise<{ devCode?: string }>;
-  verifyOtp(email: string, token: string): Promise<AuthSession>;
+  /**
+   * Verify a 6-digit code. `purpose` selects the Supabase OTP type:
+   * 'login' (passwordless sign-in), 'signup' (email confirmation after
+   * registration) or 'recovery' (password reset). Mock ignores it.
+   */
+  verifyOtp(
+    email: string,
+    token: string,
+    purpose?: 'login' | 'signup' | 'recovery',
+  ): Promise<AuthSession>;
   /** Email + password sign-in (used for admin to avoid OTP email limits). */
   signInWithPassword(email: string, password: string): Promise<AuthSession>;
   /** Create an account with name + email + password. Returns null if the email
-   * needs confirmation (caller then verifies an OTP). */
+   * needs confirmation (caller then verifies a signup OTP). */
   signUp(name: string, email: string, password: string): Promise<AuthSession | null>;
+  /** Re-send the signup confirmation code (after registration). */
+  resendVerification(email: string): Promise<{ devCode?: string }>;
+  /** Set a new password for the currently authenticated user (post-recovery). */
+  updatePassword(newPassword: string): Promise<void>;
   /** Google OAuth. Real backend redirects (returns null); mock returns a session. */
   signInWithGoogle(): Promise<AuthSession | null>;
   requestPasswordRecovery(email: string): Promise<{ devCode?: string }>;
+  /** Fire-and-forget welcome email after a successful signup (no-op on mock). */
+  sendWelcomeEmail(): Promise<void>;
   signOut(): Promise<void>;
   deleteAccount(): Promise<void>;
 

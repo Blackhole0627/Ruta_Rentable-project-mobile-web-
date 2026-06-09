@@ -10,10 +10,25 @@ import { DEFAULT_PARAMS } from '@/core/constants/defaultParams';
 
 export interface CalculatorFormState {
   platform: Platform;
+  /** How the commission is entered: a percentage or a fixed córdoba amount. */
+  commissionMode: 'percent' | 'fixed';
   commissionPct: number;
+  /** Fixed commission in C$ (used when commissionMode === 'fixed'). */
+  commissionFixed: number;
   kmWithPassenger: number;
   deadKm: number;
   fareCharged: number;
+}
+
+/** Resolve the effective commission percentage from either entry mode. */
+export function effectiveCommissionPct(
+  form: CalculatorFormState,
+  fallbackPct: number,
+): number {
+  if (form.commissionMode === 'fixed') {
+    return form.fareCharged > 0 ? (form.commissionFixed / form.fareCharged) * 100 : 0;
+  }
+  return form.commissionPct ?? fallbackPct;
 }
 
 export function useCalculator(form: CalculatorFormState) {
@@ -47,10 +62,10 @@ export function useCalculator(form: CalculatorFormState) {
       monthlyFixedCosts: vehicle.monthlyFixedCosts || defaults.monthlyFixedCostsNIO,
     });
 
-    const commissionPct =
-      form.commissionPct ??
-      settings.commissions[form.platform] ??
-      PLATFORM_COMMISSIONS[form.platform];
+    const commissionPct = effectiveCommissionPct(
+      form,
+      settings.commissions[form.platform] ?? PLATFORM_COMMISSIONS[form.platform],
+    );
 
     return calculateTrip({
       kmWithPassenger: form.kmWithPassenger || 0,

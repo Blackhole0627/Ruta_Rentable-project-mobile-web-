@@ -1,12 +1,15 @@
 import { create } from 'zustand';
+import { addMonths } from 'date-fns';
 import type {
   SubscriptionPlan,
   Subscription,
   Payment,
   PaymentMethod,
 } from '@shared/types/subscription.types';
+import type { UserProfile } from '@shared/types/user.types';
 import { getBackend } from '../backend';
 import { useUserStore } from './useUserStore';
+import { hasCapability } from '../subscription/planAccess';
 
 const backend = getBackend();
 
@@ -32,32 +35,50 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
     const user = useUserStore.getState().user;
     set({ isLoading: true });
     const plans = await backend.listPlans();
-    if (user) {
-      // Tolerate per-user fetch failures (e.g. RLS) without breaking the page.
-      const [profile, subscription, payments] = await Promise.all([
-        backend.getProfile(user.id).catch(() => null),
-        backend.getSubscription(user.id).catch(() => null),
-        backend.listPayments(user.id).catch(() => []),
-      ]);
-      // The admin may have approved a payment server-side, flipping the plan.
-      // Pull that back into the local user so "Plan actual" reflects reality.
-      if (
-        profile &&
-        (profile.currentPlan !== user.currentPlan ||
-          profile.subscriptionStatus !== user.subscriptionStatus ||
-          (profile.freeCalculationsUsed ?? 0) !== (user.freeCalculationsUsed ?? 0))
-      ) {
-        await useUserStore.getState().setUser({
+    if (!user) {
+      set({ plans, isLoading: false });
+      return;
+    }
+    // Tolerate per-user fetch failures (e.g. RLS) without breaking the page.
+    const [profile, subscription, payments] = await Promise.all([
+      backend.getProfile(user.id).catch(() => null),
+      backend.getSubscription(user.id).catch(() => null),
+      backend.listPayments(user.id).catch(() => []),
+    ]);
+
+    // Start from the server profile when present — the admin may have approved a
+    // payment server-side, flipping the plan/status.
+    const next: UserProfile = profile
+      ? {
           ...user,
           currentPlan: profile.currentPlan,
           subscriptionStatus: profile.subscriptionStatus,
           freeCalculationsUsed: profile.freeCalculationsUsed,
-        });
-      }
-      set({ plans, subscription, payments, isLoading: false });
+        }
+      : { ...user };
+
+    // Monthly expiry: a paid plan lasts 1 month from the last confirmed payment.
+    // Past that it lapses to 'overdue' (capabilities fall back to free).
+    const lastPaid = (payments ?? [])
+      .filter((p) => p.status === 'confirmed')
+      .sort((a, b) => b.paidAt.localeCompare(a.paidAt))[0];
+    const isPaidPlan = (next.currentPlan ?? 'free') !== 'free';
+    if (lastPaid && isPaidPlan) {
+      const endsAt = addMonths(new Date(lastPaid.paidAt), 1);
+      next.subscriptionEndsAt = endsAt.toISOString();
+      if (endsAt.getTime() < Date.now()) next.subscriptionStatus = 'overdue';
     } else {
-      set({ plans, isLoading: false });
+      next.subscriptionEndsAt = undefined;
     }
+
+    const changed =
+      next.currentPlan !== user.currentPlan ||
+      next.subscriptionStatus !== user.subscriptionStatus ||
+      (next.freeCalculationsUsed ?? 0) !== (user.freeCalculationsUsed ?? 0) ||
+      next.subscriptionEndsAt !== user.subscriptionEndsAt;
+    if (changed) await useUserStore.getState().setUser(next);
+
+    set({ plans, subscription, payments, isLoading: false });
   },
   subscribe: async (planId, method) => {
     const user = useUserStore.getState().user;
@@ -79,6 +100,7 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
       currentPlan: planId,
       subscriptionStatus: 'active',
       freeCalculationsUsed: 0,
+      subscriptionEndsAt: addMonths(new Date(), 1).toISOString(),
       updatedAt: new Date(),
     });
     const [subscription, payments] = await Promise.all([
@@ -119,14 +141,16 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
   },
 }));
 
-/** Whether the user has hit the free-tier calculation limit. */
+/** Whether the user has hit the free-tier calculation limit (this month). */
 export function isCalcLimitReached(
-  plan: string | undefined,
+  user: UserProfile | null | undefined,
   used: number | undefined,
   plans: SubscriptionPlan[],
 ): boolean {
-  const current = plans.find((p) => p.id === (plan ?? 'free'));
-  const limit = current?.calcLimit;
+  // Paid plan OR active cooperative → unlimited.
+  if (hasCapability(user, 'unlimitedCalc')) return false;
+  const free = plans.find((p) => p.id === 'free');
+  const limit = free?.calcLimit;
   if (limit === null || limit === undefined) return false;
   return (used ?? 0) >= limit;
 }

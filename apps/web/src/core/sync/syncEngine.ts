@@ -4,6 +4,7 @@ import type { CloudSnapshot, DeletionRecord } from '../backend';
 import type { UserVehicle } from '@shared/types/vehicle.types';
 import type { Trip } from '@shared/types/trip.types';
 import type { UserProfile } from '@shared/types/user.types';
+import { hasCapability } from '../subscription/planAccess';
 
 function vehicleTs(v: UserVehicle): number {
   return new Date(v.updatedAt ?? v.createdAt).getTime();
@@ -70,16 +71,24 @@ export async function syncNow(userId: string): Promise<SyncResult> {
     });
   }
 
-  // 1. Flush queued deletions to the cloud.
-  const deletions = await db.deletions.toArray();
-  if (deletions.length) {
-    const payload: DeletionRecord[] = deletions.map((d) => ({
-      table: d.table,
-      id: d.recordId,
-      at: d.at,
-    }));
-    await backend.deleteRecords(userId, payload);
-    await db.deletions.clear();
+  // Cloud BACKUP (writing to the cloud) is a paid feature: free tier keeps
+  // history local-only. We always PULL (so a paid user on a new device still
+  // gets their data + plan), but only PUSH when the plan/coop allows it. Read
+  // the profile AFTER the rebind above so a freshly-synced device is accurate.
+  const canPush = hasCapability((await db.users.toArray())[0], 'cloudSync');
+
+  // 1. Flush queued deletions to the cloud (only when cloud backup is enabled).
+  if (canPush) {
+    const deletions = await db.deletions.toArray();
+    if (deletions.length) {
+      const payload: DeletionRecord[] = deletions.map((d) => ({
+        table: d.table,
+        id: d.recordId,
+        at: d.at,
+      }));
+      await backend.deleteRecords(userId, payload);
+      await db.deletions.clear();
+    }
   }
 
   // 2. Pull cloud, merge newer records into local.
@@ -128,11 +137,15 @@ export async function syncNow(userId: string): Promise<SyncResult> {
     await db.settings.put({ ...cloud.settings, id: 'default' });
   }
 
-  // 3. Push the merged union back to the cloud.
-  const union = await readLocalSnapshot();
-  await backend.pushData(userId, union);
+  // 3. Push the merged union back to the cloud — paid plans / active coops only.
+  let pushed = 0;
+  if (canPush) {
+    const union = await readLocalSnapshot();
+    await backend.pushData(userId, union);
+    pushed = union.vehicles.length + union.trips.length;
+  }
 
-  return { pulled, pushed: union.vehicles.length + union.trips.length };
+  return { pulled, pushed };
 }
 
 /** Queue a deletion so it propagates to the cloud on the next sync. */

@@ -14,6 +14,7 @@ import { fileToCompressedDataUrl } from '@/shared/utils/image';
 import { AppIcons, iconPropsSm } from '@/shared/constants/icons';
 import { cn } from '@/shared/utils/cn';
 import { useI18n } from '@/core/i18n/i18n';
+import { toast } from '@/core/store/useToastStore';
 import { BANK_DETAILS } from '../bankDetails';
 
 export function SubscriptionPage() {
@@ -67,6 +68,7 @@ export function SubscriptionPage() {
     setWorking(true);
     try {
       await unsubscribe();
+      toast.info(t('Suscripción cancelada'));
     } finally {
       setWorking(false);
       setConfirmUnsub(false);
@@ -124,6 +126,7 @@ export function SubscriptionPage() {
     try {
       await submitReceipt(selected, receipt);
       closeDialog();
+      toast.success(t('Comprobante enviado. Te avisaremos cuando se apruebe.'));
     } finally {
       setWorking(false);
     }

@@ -14,8 +14,8 @@ import { formatPercent } from '@/shared/utils/formatters';
 import { AppIcons, iconPropsLg } from '@/shared/constants/icons';
 import { cn } from '@/shared/utils/cn';
 import { useI18n } from '@/core/i18n/i18n';
-
-const GROUP_PRICE_PER_DRIVER = 120; // C$/mes (plan Cooperativa)
+import { toast } from '@/core/store/useToastStore';
+import { MAX_COOP_DRIVERS } from '@shared/types/cooperative.types';
 
 export function CooperativePage() {
   const navigate = useNavigate();
@@ -35,14 +35,12 @@ export function CooperativePage() {
     respondToInvite,
     leave,
     updateParams,
-    payGroup,
   } = useCooperativeStore();
   const { t } = useI18n();
   const [name, setName] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
-  const [paid, setPaid] = useState(false);
   const [leaveConfirm, setLeaveConfirm] = useState(false);
 
   useEffect(() => {
@@ -69,7 +67,7 @@ export function CooperativePage() {
 
   const currency = user?.currency ?? 'NIO';
 
-  // ---- No cooperative yet: create flow ----
+  // ---- No cooperative yet: create flow (open to any signed-in user) ----
   if (!coop) {
     return (
       <div className="space-y-4">
@@ -103,6 +101,8 @@ export function CooperativePage() {
                     setWorking(true);
                     try {
                       await respondToInvite(inv.member.id, true);
+                      if (!useCooperativeStore.getState().error)
+                        toast.success(t('Te uniste a la cooperativa'));
                     } finally {
                       setWorking(false);
                     }
@@ -118,6 +118,7 @@ export function CooperativePage() {
                     setWorking(true);
                     try {
                       await respondToInvite(inv.member.id, false);
+                      toast.info(t('Invitación rechazada'));
                     } finally {
                       setWorking(false);
                     }
@@ -150,6 +151,8 @@ export function CooperativePage() {
                 setWorking(true);
                 try {
                   await create(name);
+                  if (!useCooperativeStore.getState().error)
+                    toast.success(t('Cooperativa creada'));
                 } finally {
                   setWorking(false);
                 }
@@ -193,6 +196,18 @@ export function CooperativePage() {
           </CardContent>
         </Card>
 
+        {coop.subscriptionActive ? (
+          <div className="flex items-center gap-2 rounded-lg border border-brand-300 bg-brand-50 px-3 py-2.5 text-sm font-medium text-brand-800">
+            <AppIcons.crown size={16} />
+            {t('Tu cooperativa está activa: tienes acceso premium.')}
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm font-medium text-amber-900">
+            <AppIcons.clock size={16} />
+            {t('Tu cooperativa aún no está activa. El administrador debe activar el plan.')}
+          </div>
+        )}
+
         {error && (
           <div className="rounded-lg border border-danger-500/30 bg-red-50 p-3 text-sm text-danger-500">
             {error}
@@ -211,6 +226,8 @@ export function CooperativePage() {
             setWorking(true);
             try {
               await leave();
+              if (!useCooperativeStore.getState().error)
+                toast.info(t('Saliste de la cooperativa'));
             } finally {
               setWorking(false);
               setLeaveConfirm(false);
@@ -224,8 +241,6 @@ export function CooperativePage() {
   }
 
   // ---- Cooperative dashboard (admin) ----
-  const groupAmount = (report?.drivers.length ?? 0) * GROUP_PRICE_PER_DRIVER;
-
   return (
     <div className="space-y-4">
       <header className="flex items-center gap-3">
@@ -239,6 +254,20 @@ export function CooperativePage() {
           </p>
         </div>
       </header>
+
+      {!coop.subscriptionActive && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 p-4">
+          <p className="flex items-center gap-2 text-sm font-semibold text-amber-900">
+            <AppIcons.crown size={18} /> {t('Activa tu flota')}
+          </p>
+          <p className="mt-1 text-xs text-amber-800">
+            {t('Compra el plan Cooperativa para dar acceso premium a todos tus conductores (hasta {max}).', { max: MAX_COOP_DRIVERS })}
+          </p>
+          <Button className="press mt-3 w-full" onClick={() => navigate('/suscripcion')}>
+            <AppIcons.crown size={18} /> {t('Comprar plan Cooperativa')}
+          </Button>
+        </div>
+      )}
 
       {report && (
         <div className="grid grid-cols-2 gap-2 text-sm">
@@ -265,7 +294,12 @@ export function CooperativePage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">{t('Conductores ({n})', { n: report?.drivers.length ?? 0 })}</CardTitle>
+          <CardTitle className="text-base">
+            {t('Conductores ({n}/{max})', {
+              n: report?.drivers.length ?? 0,
+              max: MAX_COOP_DRIVERS,
+            })}
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           {report?.drivers.map((d) => (
@@ -305,7 +339,10 @@ export function CooperativePage() {
                   type="button"
                   aria-label={t('Eliminar')}
                   className="shrink-0 text-road-400 hover:text-danger-500"
-                  onClick={() => removeMember(d.memberId)}
+                  onClick={async () => {
+                    await removeMember(d.memberId);
+                    toast.success(t('Conductor eliminado'));
+                  }}
                 >
                   <AppIcons.trash size={16} />
                 </button>
@@ -337,10 +374,11 @@ export function CooperativePage() {
                     try {
                       await invite(inviteEmail);
                       setInviteEmail('');
+                      toast.success(t('Invitación enviada'));
                     } catch (err) {
-                      setInviteError(
-                        err instanceof Error ? err.message : 'No se pudo invitar.',
-                      );
+                      const msg = err instanceof Error ? err.message : 'No se pudo invitar.';
+                      setInviteError(msg);
+                      toast.error(t(msg));
                     } finally {
                       setWorking(false);
                     }
@@ -368,36 +406,29 @@ export function CooperativePage() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">{t('Facturación en grupo')}</CardTitle>
+              <CardTitle className="text-base">{t('Suscripción de la flota')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-road-500">
-                  {t('Conductores ({n})', { n: report?.drivers.length ?? 0 })} ×{' '}
-                  {formatCurrency(GROUP_PRICE_PER_DRIVER, currency, { compact: true })}
-                </span>
-                <span className="text-lg font-bold text-brand-700">
-                  {formatCurrency(groupAmount, currency, { compact: true })}
-                  {t('/mes')}
-                </span>
-              </div>
+              {coop.subscriptionActive ? (
+                <p className="flex items-center gap-2 text-sm font-medium text-brand-700">
+                  <AppIcons.check size={16} />{' '}
+                  {t('Plan Cooperativa activo. Toda tu flota tiene premium.')}
+                </p>
+              ) : (
+                <p className="text-sm text-road-600">
+                  {t('Compra el plan Cooperativa para activar a toda tu flota (hasta {max} conductores).', { max: MAX_COOP_DRIVERS })}
+                </p>
+              )}
               <Button
-                className="w-full"
-                disabled={working || paid}
-                onClick={async () => {
-                  setWorking(true);
-                  try {
-                    await payGroup(groupAmount);
-                    setPaid(true);
-                  } finally {
-                    setWorking(false);
-                  }
-                }}
+                className="press w-full"
+                variant={coop.subscriptionActive ? 'outline' : 'default'}
+                onClick={() => navigate('/suscripcion')}
               >
-                <AppIcons.billing size={18} />
-                {paid ? t('Pago registrado ✓') : t('Pagar por la flota')}
+                <AppIcons.crown size={18} />
+                {coop.subscriptionActive
+                  ? t('Gestionar suscripción')
+                  : t('Comprar plan Cooperativa')}
               </Button>
-              <p className="text-xs text-road-400">{t('Pago simulado (un solo pago por toda la flota).')}</p>
             </CardContent>
           </Card>
         </>

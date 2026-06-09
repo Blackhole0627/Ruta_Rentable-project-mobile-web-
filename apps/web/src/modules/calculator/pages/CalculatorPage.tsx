@@ -2,7 +2,11 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { TripForm } from '../components/TripForm';
 import { ProfitabilityResult } from '../components/ProfitabilityResult';
-import { useCalculator, type CalculatorFormState } from '../hooks/useCalculator';
+import {
+  useCalculator,
+  effectiveCommissionPct,
+  type CalculatorFormState,
+} from '../hooks/useCalculator';
 import { useUserStore } from '@/core/store/useUserStore';
 import { useVehicleStore } from '@/core/store/useVehicleStore';
 import { useTripStore } from '@/core/store/useTripStore';
@@ -12,6 +16,7 @@ import {
   useSubscriptionStore,
   isCalcLimitReached,
 } from '@/core/store/useSubscriptionStore';
+import { hasCapability, freeCalcsUsedThisMonth } from '@/core/subscription/planAccess';
 import { PLATFORM_COMMISSIONS } from '@/core/constants/platforms';
 import { Button } from '@/shared/components/ui/button';
 import { EmptyState } from '@/shared/components/EmptyState';
@@ -19,11 +24,14 @@ import { Dialog } from '@/shared/components/ui/dialog';
 import { ReminderBanners } from '@/shared/components/ReminderBanners';
 import { AppIcons } from '@/shared/constants/icons';
 import { useI18n } from '@/core/i18n/i18n';
+import { toast } from '@/core/store/useToastStore';
 import type { Trip } from '@shared/types/trip.types';
 
 const initialForm = (platform: CalculatorFormState['platform']): CalculatorFormState => ({
   platform,
+  commissionMode: 'percent',
   commissionPct: PLATFORM_COMMISSIONS[platform],
+  commissionFixed: 0,
   kmWithPassenger: 0,
   deadKm: 0,
   fareCharged: 0,
@@ -52,12 +60,12 @@ export function CalculatorPage() {
   }, [status, loadPlans]);
 
   const isAuthed = status === 'authenticated';
-  const onFreePlan = (user?.currentPlan ?? 'free') === 'free';
-  const limitReached =
-    isAuthed && isCalcLimitReached(user?.currentPlan, user?.freeCalculationsUsed, plans);
+  const isUnlimited = hasCapability(user, 'unlimitedCalc');
+  const usedThisMonth = freeCalcsUsedThisMonth(user);
+  const onFreePlan = !isUnlimited;
+  const limitReached = isAuthed && isCalcLimitReached(user, usedThisMonth, plans);
   const freeLimit = plans.find((p) => p.id === 'free')?.calcLimit ?? null;
-  const remaining =
-    freeLimit != null ? Math.max(0, freeLimit - (user?.freeCalculationsUsed ?? 0)) : null;
+  const remaining = freeLimit != null && !isUnlimited ? Math.max(0, freeLimit - usedThisMonth) : null;
 
   const handleChange = (updates: Partial<CalculatorFormState>) => {
     setForm((prev) => {
@@ -84,7 +92,7 @@ export function CalculatorPage() {
       deadKm: form.deadKm,
       totalKm: result.realKm,
       fareCharged: form.fareCharged,
-      commissionPct: form.commissionPct,
+      commissionPct: effectiveCommissionPct(form, PLATFORM_COMMISSIONS[form.platform]),
       fuelCost: result.fuelCost,
       tiresCost: result.tireCost,
       oilCost: result.oilCost,
@@ -99,6 +107,7 @@ export function CalculatorPage() {
     };
     await saveTrip(trip);
     if (isAuthed && onFreePlan) await recordCalculation();
+    toast.success(t('Viaje guardado'));
     // Confirm the save with a tick, then clear the form for the next trip.
     setSaved(true);
     setTimeout(() => {

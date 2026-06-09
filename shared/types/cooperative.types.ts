@@ -5,12 +5,18 @@ export interface CooperativeParams {
   desiredMargin?: number; // decimal
 }
 
+/** Max drivers (incl. the admin) a single cooperative can hold. */
+export const MAX_COOP_DRIVERS = 20;
+
 export interface Cooperative {
   id: string;
   name: string;
   adminId: string; // user id of the cooperative admin
   createdAt: string;
   fleetParams?: CooperativeParams;
+  /** True when the admin has an active Cooperativa subscription — the whole
+   * fleet is premium while this holds. Derived; set by the backend on read. */
+  subscriptionActive?: boolean;
 }
 
 export interface CoopMember {

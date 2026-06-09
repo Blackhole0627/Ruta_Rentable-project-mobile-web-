@@ -24,6 +24,7 @@ import type {
   CooperativeParams,
   CoopInvite,
 } from '@shared/types/cooperative.types';
+import { MAX_COOP_DRIVERS } from '@shared/types/cooperative.types';
 import type { AppNotification } from '@shared/types/notification.types';
 import { Capacitor } from '@capacitor/core';
 import { SocialLogin } from '@capgo/capacitor-social-login';
@@ -175,11 +176,18 @@ export class SupabaseBackend implements BackendAdapter {
     return {};
   }
 
-  async verifyOtp(email: string, token: string): Promise<AuthSession> {
+  async verifyOtp(
+    email: string,
+    token: string,
+    purpose: 'login' | 'signup' | 'recovery' = 'login',
+  ): Promise<AuthSession> {
+    // Map our purpose to Supabase's email OTP types. Passwordless login uses
+    // 'email'; account confirmation uses 'signup'; password reset uses 'recovery'.
+    const type = purpose === 'signup' ? 'signup' : purpose === 'recovery' ? 'recovery' : 'email';
     const { data, error } = await this.client.auth.verifyOtp({
-      email,
-      token,
-      type: 'email',
+      email: email.trim(),
+      token: token.trim(),
+      type,
     });
     if (error) throw error;
     const s = data.session;
@@ -210,23 +218,27 @@ export class SupabaseBackend implements BackendAdapter {
       options: { data: { name: name.trim(), full_name: name.trim() } },
     });
     if (error) throw error;
-    let s = data.session;
-    // Email confirmation is skipped for now: log the user in right away. If
-    // signUp didn't return a session, complete it with a password sign-in.
-    // (Requires "Confirm email" disabled in Supabase Auth settings.)
-    if (!s?.user?.email) {
-      const { data: signInData } = await this.client.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
-      s = signInData.session;
-    }
+    const s = data.session;
+    // With "Confirm email" enabled, signUp returns no session and Supabase
+    // emails a confirmation code. The caller then verifies it (purpose 'signup').
+    // If confirmation is disabled, a session comes back and we log in directly.
     if (!s?.user?.email) return null;
     return {
       user: { id: s.user.id, email: s.user.email, role: await this.role(s.user.email) },
       accessToken: s.access_token,
       expiresAt: (s.expires_at ?? 0) * 1000,
     };
+  }
+
+  async resendVerification(email: string): Promise<{ devCode?: string }> {
+    const { error } = await this.client.auth.resend({ type: 'signup', email: email.trim() });
+    if (error) throw error;
+    return {};
+  }
+
+  async updatePassword(newPassword: string): Promise<void> {
+    const { error } = await this.client.auth.updateUser({ password: newPassword });
+    if (error) throw error;
   }
 
   async signInWithGoogle(): Promise<AuthSession | null> {
@@ -274,6 +286,12 @@ export class SupabaseBackend implements BackendAdapter {
     const { error } = await this.client.auth.resetPasswordForEmail(email);
     if (error) throw error;
     return {};
+  }
+
+  async sendWelcomeEmail(): Promise<void> {
+    // Server-side Edge Function (uses the Resend API key as a secret). The
+    // caller treats this as best-effort, so swallow failures here too.
+    await this.client.functions.invoke('send-welcome');
   }
 
   async signOut(): Promise<void> {
@@ -662,6 +680,7 @@ export class SupabaseBackend implements BackendAdapter {
       adminId: string;
       createdAt: string;
       fleetParams?: CooperativeParams;
+      subscriptionActive?: boolean;
     };
     return {
       id: c.id,
@@ -669,6 +688,7 @@ export class SupabaseBackend implements BackendAdapter {
       adminId: c.adminId,
       createdAt: c.createdAt,
       fleetParams: c.fleetParams ?? undefined,
+      subscriptionActive: !!c.subscriptionActive,
     };
   }
 
@@ -723,6 +743,13 @@ export class SupabaseBackend implements BackendAdapter {
     });
     if (!foundId) {
       throw new Error('No existe un usuario registrado con ese correo.');
+    }
+    const { count } = await this.client
+      .from('coop_members')
+      .select('*', { count: 'exact', head: true })
+      .eq('coop_id', coopId);
+    if ((count ?? 0) >= MAX_COOP_DRIVERS) {
+      throw new Error('La cooperativa ya alcanzó el máximo de 20 conductores.');
     }
     const userId = foundId as string;
     const member: CoopMember = {

@@ -22,6 +22,7 @@ import { Dialog } from '@/shared/components/ui/dialog';
 import { downloadCsv } from '@/shared/utils/export';
 import { formatPercent } from '@/shared/utils/formatters';
 import { useI18n } from '@/core/i18n/i18n';
+import { toast } from '@/core/store/useToastStore';
 
 type StatusFilter = TripStatus | 'all';
 
@@ -266,7 +267,10 @@ export function HistoryPage() {
                 <button
                   type="button"
                   className="flex items-center gap-1 text-xs font-medium text-danger-500"
-                  onClick={() => deleteTrip(trip.id)}
+                  onClick={async () => {
+                    await deleteTrip(trip.id);
+                    toast.success(t('Viaje eliminado'));
+                  }}
                 >
                   <AppIcons.trash size={14} /> {t('Eliminar')}
                 </button>
@@ -285,9 +289,10 @@ export function HistoryPage() {
           acceptableThreshold: settings?.acceptableThreshold ?? 0.1,
         }}
         onClose={() => setEditing(null)}
-        onSave={async (t) => {
-          await saveTrip(t);
+        onSave={async (updated) => {
+          await saveTrip(updated);
           setEditing(null);
+          toast.success(t('Viaje actualizado'));
         }}
       />
     </div>

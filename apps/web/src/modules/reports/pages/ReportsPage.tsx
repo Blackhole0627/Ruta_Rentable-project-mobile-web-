@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   BarChart,
   Bar,
@@ -20,6 +21,9 @@ import { formatPercent, formatDateShort } from '@/shared/utils/formatters';
 import { PLATFORM_LABELS, PLATFORMS } from '@/core/constants/platforms';
 import { startOfDay, startOfWeek, startOfMonth, isAfter } from 'date-fns';
 import { LoadingSkeleton } from '@/shared/components/LoadingSkeleton';
+import { EmptyState } from '@/shared/components/EmptyState';
+import { UpgradePrompt } from '@/shared/components/UpgradePrompt';
+import { hasCapability } from '@/core/subscription/planAccess';
 import { cn } from '@/shared/utils/cn';
 import type { TripStatus } from '@shared/financial-model/profitability';
 import { downloadCsv, exportReportPdf } from '@/shared/utils/export';
@@ -38,6 +42,7 @@ const STATUS_COLORS: Record<TripStatus, string> = {
 const PERIOD_TO_MONTH: Record<Period, number> = { day: 30, week: 4.345, month: 1 };
 
 export function ReportsPage() {
+  const navigate = useNavigate();
   const { trips, loadTrips, isLoading } = useTripStore();
   const { user } = useUserStore();
   const { vehicle, loadVehicles } = useVehicleStore();
@@ -204,6 +209,36 @@ export function ReportsPage() {
 
   const currency = user?.currency ?? 'NIO';
 
+  // Reports is a paid feature (Básico+).
+  if (!hasCapability(user, 'reports')) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-xl font-bold">{t('Reportes')}</h1>
+        <UpgradePrompt
+          title={t('Los reportes son una función de pago')}
+          description={t('Mejora tu plan para ver ingresos, ganancias y gráficos de tus viajes.')}
+          planLabel={t('Básico')}
+        />
+      </div>
+    );
+  }
+
+  // Nothing logged yet — show a friendly empty state instead of all-zero KPIs.
+  if (trips.length === 0) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-xl font-bold">{t('Reportes')}</h1>
+        <EmptyState
+          icon={AppIcons.reports}
+          title={t('Aún no hay viajes')}
+          description={t('Cuando registres viajes, aquí verás tus ingresos, costos y ganancias.')}
+          actionLabel={t('Calcular un viaje')}
+          onAction={() => navigate('/')}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -255,7 +290,7 @@ export function ReportsPage() {
           </div>
         ))}
       </div>
-      {breakEven && (
+      {breakEven && hasCapability(user, 'breakEven') && (
         <div className="rounded-lg border border-brand-200 bg-brand-50 p-4 shadow-sm">
           <p className="text-sm font-semibold text-brand-800">{t('Punto de equilibrio mensual')}</p>
           <p className="mt-1 text-xs text-road-600">

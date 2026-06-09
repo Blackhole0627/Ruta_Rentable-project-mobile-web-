@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { UserProfile } from '@shared/types/user.types';
 import { db } from '../db/db';
+import { hasCapability, currentMonthKey, freeCalcsUsedThisMonth } from '../subscription/planAccess';
 
 interface UserState {
   user: UserProfile | null;
@@ -36,11 +37,13 @@ export const useUserStore = create<UserState>((set, get) => ({
   recordCalculation: async () => {
     const { user } = get();
     if (!user) return;
-    const plan = user.currentPlan ?? 'free';
-    if (plan !== 'free') return;
+    // Paid plan OR active cooperative → unlimited, nothing to count.
+    if (hasCapability(user, 'unlimitedCalc')) return;
+    // Monthly reset: if the stored period isn't the current month, start at 0.
     const updated = {
       ...user,
-      freeCalculationsUsed: (user.freeCalculationsUsed ?? 0) + 1,
+      freeCalculationsUsed: freeCalcsUsedThisMonth(user) + 1,
+      freeCalcPeriod: currentMonthKey(),
       updatedAt: new Date(),
     };
     await db.users.put(updated);

@@ -486,4 +486,107 @@ export const EN: Record<string, string> = {
     'No registered user with that email.',
   'Hacer administrador': 'Make admin',
   'Quitar administrador': 'Remove admin',
+
+  // ---- Auth: verification, recovery & feedback ----
+  '¡Bienvenido de nuevo!': 'Welcome back!',
+  '¡Bienvenido!': 'Welcome!',
+  '¡Cuenta creada!': 'Account created!',
+  'Te enviamos un código a tu correo.': 'We sent a code to your email.',
+  'Te enviamos un código para restablecer tu contraseña.':
+    'We sent you a code to reset your password.',
+  'Contraseña actualizada.': 'Password updated.',
+  '¡Correo verificado! Tu cuenta está lista.': 'Email verified! Your account is ready.',
+  'Código reenviado.': 'Code resent.',
+  'Verifica tu correo': 'Verify your email',
+  'Restablece tu contraseña': 'Reset your password',
+  'Recuperar contraseña': 'Recover password',
+  'Enviamos un código a': 'We sent a code to',
+  'Modo demo: usa el código 000000': 'Demo mode: use code 000000',
+  'Código de 6 dígitos': '6-digit code',
+  'Nueva contraseña': 'New password',
+  'Guardar contraseña': 'Save password',
+  Verificar: 'Verify',
+  'Reenviar código en {s}s': 'Resend code in {s}s',
+  'Reenviar código': 'Resend code',
+  '¿Olvidaste tu contraseña?': 'Forgot your password?',
+  'Entrar con un código por correo': 'Sign in with an email code',
+  'Escribe tu correo y te enviaremos un código para crear una nueva contraseña.':
+    'Enter your email and we will send you a code to create a new password.',
+  'Volver a iniciar sesión': 'Back to sign in',
+  'Cambiar contraseña': 'Change password',
+  'Sesión cerrada': 'Signed out',
+  'Cuenta eliminada': 'Account deleted',
+  'No se pudo actualizar la contraseña': 'Could not update the password',
+  'No se pudo reenviar el código': 'Could not resend the code',
+
+  // ---- Password strength meter ----
+  Seguridad: 'Strength',
+  'Muy débil': 'Very weak',
+  Débil: 'Weak',
+  Buena: 'Good',
+  Fuerte: 'Strong',
+  'Mostrar contraseña': 'Show password',
+  'Ocultar contraseña': 'Hide password',
+
+  // ---- Toast feedback ----
+  'Vehículo guardado': 'Vehicle saved',
+  'Vehículo eliminado': 'Vehicle deleted',
+  'Vehículo activado': 'Vehicle activated',
+  'Viaje guardado': 'Trip saved',
+  'Viaje actualizado': 'Trip updated',
+  'Viaje eliminado': 'Trip deleted',
+  'Suscripción cancelada': 'Subscription cancelled',
+  'Comprobante enviado. Te avisaremos cuando se apruebe.':
+    'Receipt submitted. We will notify you when it is approved.',
+  'Te uniste a la cooperativa': 'You joined the cooperative',
+  'Invitación rechazada': 'Invitation declined',
+  'Cooperativa creada': 'Cooperative created',
+  'Saliste de la cooperativa': 'You left the cooperative',
+  'Conductor eliminado': 'Driver removed',
+  'Invitación enviada': 'Invitation sent',
+  'Pago registrado': 'Payment recorded',
+
+  // ---- Reports empty state ----
+  'Aún no hay viajes': 'No trips yet',
+  'Cuando registres viajes, aquí verás tus ingresos, costos y ganancias.':
+    'Once you log trips, you will see your income, costs and profit here.',
+  'Calcular un viaje': 'Calculate a trip',
+
+  // ---- Plans: gating & expiry ----
+  'Mejorar a {plan}': 'Upgrade to {plan}',
+  Básico: 'Basic',
+  'Los reportes son una función de pago': 'Reports are a paid feature',
+  'Mejora tu plan para ver ingresos, ganancias y gráficos de tus viajes.':
+    'Upgrade your plan to see your income, profit and trip charts.',
+  'Agregar otro vehículo (Pro)': 'Add another vehicle (Pro)',
+  'Cooperativa es del plan Cooperativa': 'Cooperative is part of the Cooperativa plan',
+  'Mejora al plan Cooperativa para administrar tu flota, invitar conductores y ver reportes grupales.':
+    'Upgrade to the Cooperativa plan to manage your fleet, invite drivers and see group reports.',
+  Vence: 'Expires',
+
+  // ---- CR-1 platforms / CR-3 commission ----
+  Aventón: 'Aventón',
+  Particular: 'Private',
+  'Comisión (C$)': 'Commission (C$)',
+
+  // ---- Cooperative: group billing & status ----
+  'Tu cooperativa está activa: tienes acceso premium.':
+    'Your cooperative is active: you have premium access.',
+  'Tu cooperativa aún no está activa. El administrador debe activar el plan.':
+    'Your cooperative is not active yet. The admin must activate the plan.',
+  'Activa tu flota': 'Activate your fleet',
+  'Compra el plan Cooperativa para dar acceso premium a todos tus conductores (hasta {max}).':
+    'Buy the Cooperativa plan to give premium access to all your drivers (up to {max}).',
+  'Comprar plan Cooperativa': 'Buy Cooperativa plan',
+  'Suscripción de la flota': 'Fleet subscription',
+  'Plan Cooperativa activo. Toda tu flota tiene premium.':
+    'Cooperativa plan active. Your whole fleet has premium.',
+  'Compra el plan Cooperativa para activar a toda tu flota (hasta {max} conductores).':
+    'Buy the Cooperativa plan to activate your whole fleet (up to {max} drivers).',
+  'Gestionar suscripción': 'Manage subscription',
+  'Conductores ({n}/{max})': 'Drivers ({n}/{max})',
+  'La cooperativa ya alcanzó el máximo de 20 conductores.':
+    'The cooperative has reached the maximum of 20 drivers.',
+  'El respaldo en la nube está disponible en los planes de pago.':
+    'Cloud backup is available on paid plans.',
 };

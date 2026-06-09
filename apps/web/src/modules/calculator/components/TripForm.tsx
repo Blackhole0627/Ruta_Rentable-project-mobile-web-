@@ -54,16 +54,47 @@ export function TripForm({ form, onChange }: TripFormProps) {
         </div>
       </div>
       <div>
-        <Label htmlFor="commission">{t('Comisión (%)')}</Label>
-        <Input
-          id="commission"
-          type="number"
-          min={0}
-          max={100}
-          value={form.commissionPct}
-          onChange={(e) => onChange({ commissionPct: Number(e.target.value) })}
-          className="mt-1"
-        />
+        <div className="flex items-center justify-between">
+          <Label htmlFor="commission">
+            {form.commissionMode === 'fixed' ? t('Comisión (C$)') : t('Comisión (%)')}
+          </Label>
+          <div className="flex rounded-lg border border-road-200 p-0.5">
+            {(['percent', 'fixed'] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => onChange({ commissionMode: m })}
+                className={cn(
+                  'rounded-md px-3 py-1 text-xs font-semibold transition-colors',
+                  form.commissionMode === m ? 'bg-brand-500 text-white' : 'text-road-500',
+                )}
+              >
+                {m === 'percent' ? '%' : 'C$'}
+              </button>
+            ))}
+          </div>
+        </div>
+        {form.commissionMode === 'fixed' ? (
+          <Input
+            id="commission"
+            type="number"
+            min={0}
+            value={form.commissionFixed || ''}
+            onChange={(e) => onChange({ commissionFixed: Number(e.target.value) })}
+            className="mt-1"
+            placeholder="0"
+          />
+        ) : (
+          <Input
+            id="commission"
+            type="number"
+            min={0}
+            max={100}
+            value={form.commissionPct}
+            onChange={(e) => onChange({ commissionPct: Number(e.target.value) })}
+            className="mt-1"
+          />
+        )}
       </div>
       <div>
         <div className="flex items-center justify-between">

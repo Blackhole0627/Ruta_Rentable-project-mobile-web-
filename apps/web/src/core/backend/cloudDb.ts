@@ -27,6 +27,8 @@ export interface AuthRecord {
   userId: string;
   code?: string;
   role: UserRole;
+  /** Name captured at signup, applied to the user row after OTP verification. */
+  pendingName?: string;
 }
 
 export interface MetaRecord {
@@ -149,7 +151,7 @@ function defaultPlans(): SubscriptionPlan[] {
   ];
 }
 
-const DEMO_PLATFORMS: Platform[] = ['indrive', 'uber', 'taxi', 'delivery', 'private'];
+const DEMO_PLATFORMS: Platform[] = ['indrive', 'aventon', 'taxi', 'delivery', 'private'];
 
 function buildDemoTrips(userId: string, count: number): CloudTrip[] {
   const trips: CloudTrip[] = [];
@@ -221,7 +223,7 @@ export async function ensureCloudSeed(): Promise<void> {
       await cloudDb.catalog.bulkPut(VEHICLE_CATALOG.map((v) => ({ ...v })));
 
       // Admin account (no demo trips).
-      const adminEmail = ADMIN_EMAILS[0] ?? 'admin@rutarentable.com';
+      const adminEmail = ADMIN_EMAILS[0] ?? 'blackhole45808@gmail.com';
       const adminId = crypto.randomUUID();
       await cloudDb.users.put({
         id: adminId,

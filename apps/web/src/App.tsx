@@ -6,10 +6,12 @@ import { useVehicleStore } from './core/store/useVehicleStore';
 import { useSettingsStore } from './core/store/useSettingsStore';
 import { useAuthStore } from './core/store/useAuthStore';
 import { useSyncStore } from './core/store/useSyncStore';
+import { useCooperativeStore } from './core/store/useCooperativeStore';
 import { useOnlineStatus } from './shared/hooks/useOnlineStatus';
 import { runMigrations } from './core/db/migrations';
 import { LoadingSpinner } from './shared/components/LoadingSpinner';
 import { NativeBridge } from './shared/components/NativeBridge';
+import { Toaster } from './shared/components/Toaster';
 
 // Admin panel is desktop-only and chart-heavy — load it on demand so the
 // driver bundle stays lean.
@@ -37,6 +39,12 @@ export default function App() {
     if (isOnline && status === 'authenticated') sync();
   }, [isOnline, status, sync]);
 
+  // Resolve cooperative membership on sign-in so member drivers get fleet
+  // premium app-wide (not only after visiting the Cooperativa screen).
+  useEffect(() => {
+    if (status === 'authenticated') useCooperativeStore.getState().load();
+  }, [status]);
+
   if (userLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -48,6 +56,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <NativeBridge />
+      <Toaster />
       <Suspense
         fallback={
           <div className="flex min-h-screen items-center justify-center">

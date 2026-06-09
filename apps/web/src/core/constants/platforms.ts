@@ -2,15 +2,17 @@ import type { Platform } from '@shared/types/trip.types';
 
 export const PLATFORM_LABELS: Record<Platform, string> = {
   indrive: 'InDrive',
-  uber: 'Uber',
+  aventon: 'Aventón',
+  uber: 'Uber', // legacy — historical trips only, not selectable
   taxi: 'Taxi',
-  private: 'Privado',
+  private: 'Particular',
   delivery: 'Delivery',
   other: 'Otro',
 };
 
 export const PLATFORM_COMMISSIONS: Record<Platform, number> = {
   indrive: 10,
+  aventon: 12,
   uber: 25,
   taxi: 0,
   private: 0,
@@ -18,9 +20,10 @@ export const PLATFORM_COMMISSIONS: Record<Platform, number> = {
   other: 0,
 };
 
+// Selectable platforms (Nicaragua). Uber is intentionally excluded.
 export const PLATFORMS: Platform[] = [
   'indrive',
-  'uber',
+  'aventon',
   'taxi',
   'private',
   'delivery',

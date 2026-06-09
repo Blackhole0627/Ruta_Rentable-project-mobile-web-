@@ -3,6 +3,7 @@ export const DEFAULT_PARAMS = {
   dieselPerLiter: 38.0,
   commissions: {
     indrive: 10,
+    aventon: 12,
     uber: 25,
     taxi: 0,
     private: 0,

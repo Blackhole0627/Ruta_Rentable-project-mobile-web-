@@ -1,6 +1,15 @@
 import type { TripStatus } from '../financial-model/profitability';
 
-export type Platform = 'indrive' | 'uber' | 'taxi' | 'private' | 'delivery' | 'other';
+// 'uber' is kept only so historical trips still resolve; it's no longer offered
+// (Uber doesn't operate in Nicaragua — replaced by 'aventon').
+export type Platform =
+  | 'indrive'
+  | 'aventon'
+  | 'uber'
+  | 'taxi'
+  | 'private'
+  | 'delivery'
+  | 'other';
 
 export interface Trip {
   id: string;

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useVehicleStore } from '@/core/store/useVehicleStore';
 import { useSettingsStore } from '@/core/store/useSettingsStore';
 import { Button } from '@/shared/components/ui/button';
@@ -15,10 +16,12 @@ import type { UnitType, UserVehicle } from '@shared/types/vehicle.types';
 import type { SettingsRecord } from '@/core/db/schema';
 import { LoadingSkeleton } from '@/shared/components/LoadingSkeleton';
 import { SearchableSelect } from '@/shared/components/ui/searchable-select';
-import { AppIcons, iconPropsLg, iconPropsSm } from '@/shared/constants/icons';
+import { AppIcons, iconPropsSm } from '@/shared/constants/icons';
 import { cn } from '@/shared/utils/cn';
 import { CostBreakdownChart } from '../components/CostBreakdownChart';
 import { useI18n } from '@/core/i18n/i18n';
+import { toast } from '@/core/store/useToastStore';
+import { hasCapability } from '@/core/subscription/planAccess';
 
 /** Numeric field with a driver-friendly hint (FR-VEH-03 tooltips). */
 function NumberField({
@@ -50,12 +53,14 @@ function NumberField({
 type EditTarget = { mode: 'new'; nonce: number } | { mode: 'edit'; id: string };
 
 export function VehiclePage() {
+  const navigate = useNavigate();
   const { vehicles, vehicle, loadVehicles, saveVehicle, setActiveVehicle, deleteVehicle, isLoading } =
     useVehicleStore();
   const { settings, loadSettings } = useSettingsStore();
   const { user } = useUserStore();
   const { t } = useI18n();
   const [override, setOverride] = useState<EditTarget | null>(null);
+  const canAddMore = hasCapability(user, 'multiVehicle');
 
   useEffect(() => {
     loadVehicles();
@@ -72,20 +77,19 @@ export function VehiclePage() {
 
   return (
     <div className="space-y-4">
-      <header className="flex items-center gap-3">
-        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-100 text-brand-700">
-          <AppIcons.vehicle {...iconPropsLg} />
-        </span>
+      <header>
         <h1 className="text-xl font-bold">{t('Mis vehículos')}</h1>
       </header>
 
       {vehicles.length > 0 && (
         <div className="space-y-2">
-          {vehicles.map((v) => (
+          {vehicles.map((v) => {
+            const VIcon = v.unitType === 'motorcycle' ? AppIcons.motorcycle : AppIcons.car;
+            return (
             <div
               key={v.id}
               className={cn(
-                'flex items-center justify-between rounded-lg border bg-white p-3',
+                'flex items-center justify-between rounded-lg border bg-white p-3 transition-colors',
                 v.id === seed?.id ? 'border-brand-500 ring-1 ring-brand-500' : 'border-road-200',
               )}
             >
@@ -94,7 +98,9 @@ export function VehiclePage() {
                 className="flex flex-1 items-center gap-3 text-left"
                 onClick={() => setOverride({ mode: 'edit', id: v.id })}
               >
-                <AppIcons.car size={20} className="text-road-500" />
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-road-100 text-road-500">
+                  <VIcon size={18} />
+                </span>
                 <span>
                   <span className="block font-medium">
                     {v.make} {v.model}
@@ -108,31 +114,51 @@ export function VehiclePage() {
                 {v.isActive ? (
                   <Badge variant="profitable">{t('Activo')}</Badge>
                 ) : (
-                  <Button size="sm" variant="outline" onClick={() => setActiveVehicle(v.id)}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="press"
+                    onClick={() => {
+                      setActiveVehicle(v.id);
+                      toast.info(t('Vehículo activado'));
+                    }}
+                  >
                     {t('Usar')}
                   </Button>
                 )}
                 <button
                   type="button"
                   aria-label={t('Eliminar')}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg text-danger-500 hover:bg-red-50"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg text-danger-500 transition-colors hover:bg-red-50"
                   onClick={async () => {
                     await deleteVehicle(v.id);
                     setOverride(null);
+                    toast.success(t('Vehículo eliminado'));
                   }}
                 >
                   <AppIcons.trash size={18} />
                 </button>
               </div>
             </div>
-          ))}
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => setOverride({ mode: 'new', nonce: Date.now() })}
-          >
-            <AppIcons.plus size={18} /> {t('Agregar otro vehículo')}
-          </Button>
+            );
+          })}
+          {canAddMore ? (
+            <Button
+              variant="outline"
+              className="w-full press"
+              onClick={() => setOverride({ mode: 'new', nonce: Date.now() })}
+            >
+              <AppIcons.plus size={18} /> {t('Agregar otro vehículo')}
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              className="w-full press"
+              onClick={() => navigate('/suscripcion')}
+            >
+              <AppIcons.lock size={18} /> {t('Agregar otro vehículo (Pro)')}
+            </Button>
+          )}
         </div>
       )}
 
@@ -145,6 +171,7 @@ export function VehiclePage() {
         onSave={async (v) => {
           await saveVehicle(v);
           setOverride({ mode: 'edit', id: v.id });
+          toast.success(t('Vehículo guardado'));
         }}
       />
     </div>
@@ -179,6 +206,7 @@ function VehicleEditor({
     description: `${v.estKmPerLiter} km/L · ${v.fuelType === 'gasoline' ? t('Gasolina') : v.fuelType === 'diesel' ? t('Diésel') : t('Eléctrico')}`,
   }));
   const defaults = unitType === 'car' ? DEFAULT_PARAMS.car : DEFAULT_PARAMS.motorcycle;
+  const EditorIcon = unitType === 'motorcycle' ? AppIcons.motorcycle : AppIcons.car;
 
   const handleCatalogSelect = (id: string) => {
     setCatalogId(id);
@@ -239,22 +267,29 @@ function VehicleEditor({
     <>
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-100 text-brand-700 transition-colors">
+              <EditorIcon size={18} />
+            </span>
             {isNew ? t('Nuevo vehículo') : t('Editar vehículo')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex gap-2">
-            {(['car', 'motorcycle'] as UnitType[]).map((ut) => (
-              <Button
-                key={ut}
-                variant={unitType === ut ? 'default' : 'outline'}
-                className="flex-1"
-                onClick={() => setUnitType(ut)}
-              >
-                {ut === 'car' ? t('Automóvil') : t('Motocicleta')}
-              </Button>
-            ))}
+            {(['car', 'motorcycle'] as UnitType[]).map((ut) => {
+              const TIcon = ut === 'car' ? AppIcons.car : AppIcons.motorcycle;
+              return (
+                <Button
+                  key={ut}
+                  variant={unitType === ut ? 'default' : 'outline'}
+                  className="flex-1 press"
+                  onClick={() => setUnitType(ut)}
+                >
+                  <TIcon size={18} />
+                  {ut === 'car' ? t('Automóvil') : t('Motocicleta')}
+                </Button>
+              );
+            })}
           </div>
           <SearchableSelect
             label={t('Marca y modelo')}

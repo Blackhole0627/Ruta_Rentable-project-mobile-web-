@@ -49,6 +49,16 @@ import {
   CalendarDays,
   Image as ImageIcon,
   Bell as BellRing,
+  Bike,
+  Eye,
+  EyeOff,
+  ArrowLeft,
+  CheckCircle2,
+  AlertCircle,
+  Info,
+  Loader2,
+  KeyRound,
+  MailCheck,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -88,6 +98,7 @@ export const AppIcons = {
   check: Check,
   close: X,
   car: Car,
+  motorcycle: Bike,
   fuel: Fuel,
   gauge: Gauge,
   // Stage 2
@@ -123,6 +134,15 @@ export const AppIcons = {
   clock: Clock,
   calendar: CalendarDays,
   image: ImageIcon,
+  eye: Eye,
+  eyeOff: EyeOff,
+  back: ArrowLeft,
+  success: CheckCircle2,
+  alert: AlertCircle,
+  info: Info,
+  spinner: Loader2,
+  key: KeyRound,
+  mailCheck: MailCheck,
 } as const;
 
 export type AppIconName = keyof typeof AppIcons;

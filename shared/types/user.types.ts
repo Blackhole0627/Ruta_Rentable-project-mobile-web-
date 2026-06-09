@@ -19,5 +19,12 @@ export interface UserProfile {
   subscriptionStatus?: SubscriptionStatus;
   currentPlan?: string;
   freeCalculationsUsed?: number;
+  /** Month the free-calc counter belongs to (YYYY-MM); resets each month. */
+  freeCalcPeriod?: string;
+  /** ISO date a paid plan expires (1 month after the last confirmed payment). */
+  subscriptionEndsAt?: string;
+  /** True when the user belongs to a cooperative whose admin's plan is active
+   * (grants premium to member drivers — they don't pay individually). */
+  coopActive?: boolean;
   updatedAt?: Date;
 }

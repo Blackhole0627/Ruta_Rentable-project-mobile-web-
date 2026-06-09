@@ -22,6 +22,7 @@ import type {
   CooperativeParams,
   CoopInvite,
 } from '@shared/types/cooperative.types';
+import { MAX_COOP_DRIVERS } from '@shared/types/cooperative.types';
 import type { AppNotification } from '@shared/types/notification.types';
 import type { BackendAdapter, CloudSnapshot, DeletionRecord } from './types';
 import { cloudDb, ensureCloudSeed, type CloudUser } from './cloudDb';
@@ -76,33 +77,57 @@ export class MockBackend implements BackendAdapter {
     return { devCode: code };
   }
 
-  async verifyOtp(email: string, token: string): Promise<AuthSession> {
+  async verifyOtp(
+    email: string,
+    token: string,
+    _purpose: 'login' | 'signup' | 'recovery' = 'login',
+  ): Promise<AuthSession> {
+    void _purpose; // the mock treats every OTP the same way.
     await this.ready();
     const normalized = email.trim().toLowerCase();
     const record = await cloudDb.auth.get(normalized);
     if (!record) throw new Error('Solicita un código primero.');
     // Accept the stored code or the universal dev code.
-    if (record.code !== token && token !== '000000') {
+    if (record.code !== token.trim() && token.trim() !== '000000') {
       throw new Error('Código incorrecto.');
     }
     await cloudDb.auth.update(normalized, { code: undefined });
-    return this.issueSession(record.email, record.userId, record.role);
+    const session = await this.issueSession(record.email, record.userId, record.role);
+    // Apply the name captured at signup, now that the user row exists.
+    if (record.pendingName) {
+      await cloudDb.users.update(record.userId, { name: record.pendingName });
+      await cloudDb.auth.update(normalized, { pendingName: undefined });
+    }
+    return session;
   }
 
-  async signUp(name: string, email: string, password: string): Promise<AuthSession> {
+  async signUp(name: string, email: string, password: string): Promise<AuthSession | null> {
     await this.ready();
     if (password.length < 6) throw new Error('La contraseña debe tener al menos 6 caracteres.');
     const normalized = email.trim().toLowerCase();
+    const code = genCode();
     let record = await cloudDb.auth.get(normalized);
     if (!record) {
       const userId = crypto.randomUUID();
       const role = isAdminEmail(normalized) ? 'admin' : 'driver';
       record = { email: normalized, userId, role };
-      await cloudDb.auth.put(record);
     }
-    const session = await this.issueSession(record.email, record.userId, record.role);
-    if (name.trim()) await cloudDb.users.update(record.userId, { name: name.trim() });
-    return session;
+    record.code = code;
+    record.pendingName = name.trim() || undefined;
+    await cloudDb.auth.put(record);
+    // Mirror Supabase "Confirm email": no session yet — the caller verifies the
+    // 6-digit code next. (Surfaced as devCode in the UI for offline testing.)
+    return null;
+  }
+
+  async resendVerification(email: string): Promise<{ devCode?: string }> {
+    // Re-issue a fresh signup code (same path as requesting one).
+    return this.requestOtp(email);
+  }
+
+  async updatePassword(_newPassword: string): Promise<void> {
+    // The mock has no real password store; sign-in accepts any password ≥ 6.
+    void _newPassword;
   }
 
   async signInWithGoogle(): Promise<AuthSession> {
@@ -173,6 +198,10 @@ export class MockBackend implements BackendAdapter {
   async requestPasswordRecovery(email: string): Promise<{ devCode?: string }> {
     // OTP-based: recovery is the same as requesting a fresh code.
     return this.requestOtp(email);
+  }
+
+  async sendWelcomeEmail(): Promise<void> {
+    // No outbound email in offline/demo mode.
   }
 
   async signOut(): Promise<void> {
@@ -490,17 +519,33 @@ export class MockBackend implements BackendAdapter {
   // ---- Cooperatives / Fleets ----
   async getMyCooperative(userId: string): Promise<Cooperative | null> {
     await this.ready();
-    const own = await cloudDb.cooperatives.where('adminId').equals(userId).first();
-    if (own) return own;
-
-    // Only ACTIVE memberships count as "belonging" to a cooperative.
-    const membership = await cloudDb.coopMembers
-      .where('userId')
-      .equals(userId)
-      .filter((m) => m.status === 'active')
-      .first();
-    if (membership) return (await cloudDb.cooperatives.get(membership.coopId)) ?? null;
-    return null;
+    let coop = await cloudDb.cooperatives.where('adminId').equals(userId).first();
+    if (!coop) {
+      // Only ACTIVE memberships count as "belonging" to a cooperative.
+      const membership = await cloudDb.coopMembers
+        .where('userId')
+        .equals(userId)
+        .filter((m) => m.status === 'active')
+        .first();
+      if (membership) coop = await cloudDb.cooperatives.get(membership.coopId);
+    }
+    if (!coop) return null;
+    // The fleet is premium while the admin has a confirmed Cooperativa payment
+    // within the last month (monthly expiry; mirrors the my_cooperative RPC).
+    const admin = await cloudDb.users.get(coop.adminId);
+    let subscriptionActive = false;
+    if (admin && admin.currentPlan === 'coop') {
+      const monthAgo = Date.now() - 31 * 86_400_000;
+      const recent = await cloudDb.payments
+        .where('userId')
+        .equals(coop.adminId)
+        .filter(
+          (p) => p.status === 'confirmed' && new Date(p.paidAt).getTime() > monthAgo,
+        )
+        .first();
+      subscriptionActive = !!recent;
+    }
+    return { ...coop, subscriptionActive };
   }
 
   async listPendingInvites(userId: string): Promise<CoopInvite[]> {
@@ -572,6 +617,11 @@ export class MockBackend implements BackendAdapter {
       .filter((m) => m.email === normalized)
       .first();
     if (existing) return existing;
+
+    const count = await cloudDb.coopMembers.where('coopId').equals(coopId).count();
+    if (count >= MAX_COOP_DRIVERS) {
+      throw new Error('La cooperativa ya alcanzó el máximo de 20 conductores.');
+    }
 
     const member: CoopMember = {
       id: crypto.randomUUID(),

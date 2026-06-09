@@ -16,7 +16,7 @@ export const GOOGLE_WEB_CLIENT_ID =
 /** Emails that are granted the admin role in the mock backend (comma-separated). */
 const RAW_ADMIN_EMAILS =
   (import.meta.env.VITE_ADMIN_EMAILS as string | undefined) ??
-  'admin@rutarentable.com';
+  'blackhole45808@gmail.com';
 
 export const ADMIN_EMAILS = RAW_ADMIN_EMAILS.split(',')
   .map((e) => e.trim().toLowerCase())
