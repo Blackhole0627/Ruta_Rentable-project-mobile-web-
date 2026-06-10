@@ -137,13 +137,21 @@ export async function syncNow(userId: string): Promise<SyncResult> {
     await db.settings.put({ ...cloud.settings, id: 'default' });
   }
 
-  // 3. Push the merged union back to the cloud — paid plans / active coops only.
-  let pushed = 0;
+  // 3. Always sync the PROFILE (identity, plan, role) so the backend recognises
+  // the user — even on the free tier. Only the trip/vehicle HISTORY backup is
+  // gated, so free users still get a users row (admin visibility, plan state).
+  const union = await readLocalSnapshot();
   if (canPush) {
-    const union = await readLocalSnapshot();
     await backend.pushData(userId, union);
-    pushed = union.vehicles.length + union.trips.length;
+  } else if (union.profile) {
+    await backend.pushData(userId, {
+      profile: union.profile,
+      vehicles: [],
+      trips: [],
+      settings: union.settings,
+    });
   }
+  const pushed = canPush ? union.vehicles.length + union.trips.length : 0;
 
   return { pulled, pushed };
 }
