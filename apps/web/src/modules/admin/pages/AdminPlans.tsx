@@ -12,6 +12,7 @@ import { LoadingSkeleton } from '@/shared/components/LoadingSkeleton';
 import { formatCurrency } from '@/shared/utils/currency';
 import { AppIcons } from '@/shared/constants/icons';
 import { useI18n } from '@/core/i18n/i18n';
+import { toast } from '@/core/store/useToastStore';
 import { ALL_CAPABILITIES, type Capability } from '@/core/subscription/planAccess';
 
 const backend = getBackend();
@@ -98,6 +99,7 @@ export function AdminPlans() {
           await backend.adminUpsertPlan(p);
           await reload();
           setEditing(null);
+          toast.success(t('Plan guardado'));
         }}
       />
     </div>

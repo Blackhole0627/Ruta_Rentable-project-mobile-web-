@@ -14,6 +14,7 @@ import { formatCurrency } from '@/shared/utils/currency';
 import { formatDate } from '@/shared/utils/formatters';
 import { cn } from '@/shared/utils/cn';
 import { useI18n } from '@/core/i18n/i18n';
+import { toast } from '@/core/store/useToastStore';
 
 const backend = getBackend();
 
@@ -68,12 +69,14 @@ export function AdminUsers() {
     await backend.adminUpdateUserStatus(userId, status);
     await reload();
     setSelected((s) => (s && s.id === userId ? { ...s, status } : s));
+    toast.success(t('Estado actualizado'));
   };
 
   const handleMakeAdmin = async (userId: string) => {
     await backend.adminSetUserRole(userId, 'admin');
     await reload(); // promoted user leaves the driver list
     setSelected(null);
+    toast.success(t('Usuario hecho administrador'));
   };
 
   if (!users) return <LoadingSkeleton variant="table" />;

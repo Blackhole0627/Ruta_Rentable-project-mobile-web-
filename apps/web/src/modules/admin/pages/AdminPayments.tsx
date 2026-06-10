@@ -9,6 +9,7 @@ import { formatCurrency } from '@/shared/utils/currency';
 import { formatDate } from '@/shared/utils/formatters';
 import { AppIcons } from '@/shared/constants/icons';
 import { useI18n } from '@/core/i18n/i18n';
+import { toast } from '@/core/store/useToastStore';
 
 const backend = getBackend();
 
@@ -34,6 +35,7 @@ export function AdminPayments() {
     try {
       await backend.adminReviewPayment(id, approve);
       await reload();
+      toast.success(approve ? t('Pago aprobado') : t('Pago rechazado'));
     } finally {
       setBusy(null);
     }

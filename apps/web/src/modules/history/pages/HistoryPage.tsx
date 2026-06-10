@@ -353,7 +353,12 @@ function TripEditDialog({
             {formatCurrency(preview.netProfit, currency, { compact: true })}
           </span>
         </div>
-        <Button className="w-full" onClick={() => onSave(preview)}>
+        {(km <= 0 || fare <= 0) && (
+          <p className="text-xs text-danger-500">
+            {t('Ingresa km con pasajero y tarifa mayores a 0.')}
+          </p>
+        )}
+        <Button className="w-full" onClick={() => onSave(preview)} disabled={km <= 0 || fare <= 0}>
           {t('Guardar cambios')}
         </Button>
       </div>

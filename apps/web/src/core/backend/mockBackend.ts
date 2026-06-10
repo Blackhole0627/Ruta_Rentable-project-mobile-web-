@@ -468,6 +468,22 @@ export class MockBackend implements BackendAdapter {
   async adminCreateAnnouncement(announcement: Announcement): Promise<Announcement> {
     await this.ready();
     await cloudDb.announcements.put(announcement);
+    // Deliver immediately (no background scheduler) as in-app notifications to
+    // the targeted drivers — otherwise an announcement is never seen by anyone.
+    if (new Date(announcement.sendAt).getTime() <= Date.now()) {
+      const users = await cloudDb.users.toArray();
+      const target = announcement.target;
+      for (const u of users) {
+        if (u.role === 'admin') continue;
+        const match =
+          target.kind === 'all' ||
+          (target.kind === 'plan' && (u.currentPlan ?? 'free') === target.plan) ||
+          (target.kind === 'status' && (u.subscriptionStatus ?? 'trial') === target.status);
+        if (match) {
+          await this.notify(u.id, announcement.title, announcement.body, 'system', '/');
+        }
+      }
+    }
     return announcement;
   }
 

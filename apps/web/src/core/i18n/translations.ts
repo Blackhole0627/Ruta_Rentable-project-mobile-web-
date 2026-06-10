@@ -597,4 +597,12 @@ export const EN: Record<string, string> = {
   'Respaldo en la nube': 'Cloud backup',
   'Varios vehículos': 'Multiple vehicles',
   'Cooperativa / flota': 'Cooperative / fleet',
+
+  // ---- Settings recommended values + history validation ----
+  'Restablecer a valores recomendados': 'Reset to recommended values',
+  'Valores recomendados aplicados': 'Recommended values applied',
+  'No se pudieron cargar los valores recomendados':
+    'Could not load recommended values',
+  'Ingresa km con pasajero y tarifa mayores a 0.':
+    'Enter passenger km and fare greater than 0.',
 };

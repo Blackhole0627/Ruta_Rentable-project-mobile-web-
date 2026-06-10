@@ -9,6 +9,7 @@ import { LoadingSkeleton } from '@/shared/components/LoadingSkeleton';
 import { PLATFORMS, PLATFORM_LABELS } from '@/core/constants/platforms';
 import { AppIcons } from '@/shared/constants/icons';
 import { useI18n } from '@/core/i18n/i18n';
+import { toast } from '@/core/store/useToastStore';
 import type { Platform } from '@shared/types/trip.types';
 
 const backend = getBackend();
@@ -35,6 +36,7 @@ export function AdminParameters() {
     try {
       await backend.adminUpdateParameters(params);
       setSaved(true);
+      toast.success(t('Parámetros guardados. Los conductores los verán al actualizar.'));
     } finally {
       setSaving(false);
     }

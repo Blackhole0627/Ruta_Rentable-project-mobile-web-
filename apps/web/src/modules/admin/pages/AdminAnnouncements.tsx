@@ -12,6 +12,7 @@ import { LoadingSkeleton } from '@/shared/components/LoadingSkeleton';
 import { formatDate } from '@/shared/utils/formatters';
 import { AppIcons } from '@/shared/constants/icons';
 import { useI18n } from '@/core/i18n/i18n';
+import { toast } from '@/core/store/useToastStore';
 
 const backend = getBackend();
 
@@ -64,6 +65,7 @@ export function AdminAnnouncements() {
       setBody('');
       setSchedule('');
       await reload();
+      toast.success(schedule ? t('Anuncio programado') : t('Anuncio enviado'));
     } finally {
       setSending(false);
     }

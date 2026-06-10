@@ -14,11 +14,12 @@ import { PLATFORMS, PLATFORM_LABELS } from '@/core/constants/platforms';
 import { LoadingSkeleton } from '@/shared/components/LoadingSkeleton';
 import { AppIcons, iconPropsSm } from '@/shared/constants/icons';
 import { useI18n } from '@/core/i18n/i18n';
+import { toast } from '@/core/store/useToastStore';
 import type { Currency, FuelUnit } from '@shared/types/user.types';
 
 export function SettingsPage() {
   const navigate = useNavigate();
-  const { settings, loadSettings, updateSettings, isLoading } = useSettingsStore();
+  const { settings, loadSettings, updateSettings, applyRecommended, isLoading } = useSettingsStore();
   const { user, setUser } = useUserStore();
   const { status, session } = useAuthStore();
   const { coop, invites, isAdmin, load: loadCoop } = useCooperativeStore();
@@ -253,6 +254,17 @@ export function SettingsPage() {
           </CardContent>
         </Card>
       )}
+      <Button
+        variant="outline"
+        className="w-full"
+        onClick={async () => {
+          const ok = await applyRecommended();
+          if (ok) toast.success(t('Valores recomendados aplicados'));
+          else toast.error(t('No se pudieron cargar los valores recomendados'));
+        }}
+      >
+        <AppIcons.sync size={18} /> {t('Restablecer a valores recomendados')}
+      </Button>
       <Button variant="destructive" className="w-full" onClick={handleClearData}>
         {confirmClear ? t('Confirmar: borrar todos los datos') : t('Borrar todos los datos')}
       </Button>

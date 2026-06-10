@@ -689,6 +689,16 @@ export class SupabaseBackend implements BackendAdapter {
       send_at: announcement.sendAt,
       created_at: announcement.createdAt,
     });
+    // Fan the announcement out to the targeted users as notifications (a
+    // SECURITY DEFINER RPC inserts rows for other users past RLS).
+    if (new Date(announcement.sendAt).getTime() <= Date.now()) {
+      const { error } = await this.client.rpc('broadcast_announcement', {
+        p_title: announcement.title,
+        p_body: announcement.body,
+        p_target: announcement.target,
+      });
+      if (error) throw error;
+    }
     return announcement;
   }
 
