@@ -605,4 +605,5 @@ export const EN: Record<string, string> = {
     'Could not load recommended values',
   'Ingresa km con pasajero y tarifa mayores a 0.':
     'Enter passenger km and fare greater than 0.',
+  'No se pudo guardar el plan': 'Could not save the plan',
 };

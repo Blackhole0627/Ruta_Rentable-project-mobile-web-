@@ -96,10 +96,14 @@ export function AdminPlans() {
         plan={editing}
         onClose={() => setEditing(null)}
         onSave={async (p) => {
-          await backend.adminUpsertPlan(p);
-          await reload();
-          setEditing(null);
-          toast.success(t('Plan guardado'));
+          try {
+            await backend.adminUpsertPlan(p);
+            await reload();
+            setEditing(null);
+            toast.success(t('Plan guardado'));
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : t('No se pudo guardar el plan'));
+          }
         }}
       />
     </div>

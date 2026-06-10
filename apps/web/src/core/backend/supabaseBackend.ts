@@ -574,7 +574,11 @@ export class SupabaseBackend implements BackendAdapter {
     userId: string,
     status: AdminUserRow['status'],
   ): Promise<void> {
-    await this.client.from('users').update({ subscription_status: status }).eq('id', userId);
+    const { error } = await this.client
+      .from('users')
+      .update({ subscription_status: status })
+      .eq('id', userId);
+    if (error) throw error;
   }
 
   async adminListPlans(): Promise<SubscriptionPlan[]> {
@@ -582,7 +586,7 @@ export class SupabaseBackend implements BackendAdapter {
   }
 
   async adminUpsertPlan(plan: SubscriptionPlan): Promise<SubscriptionPlan> {
-    await this.client.from('plans').upsert({
+    const { error } = await this.client.from('plans').upsert({
       id: plan.id,
       name: plan.name,
       price_nio: plan.priceNio,
@@ -593,6 +597,7 @@ export class SupabaseBackend implements BackendAdapter {
       duration_days: plan.durationDays ?? 30,
       is_active: plan.isActive,
     });
+    if (error) throw error;
     return plan;
   }
 
@@ -649,7 +654,7 @@ export class SupabaseBackend implements BackendAdapter {
   }
 
   async adminUpsertCatalog(entry: CatalogVehicle): Promise<CatalogVehicle> {
-    await this.client.from('vehicle_catalog').upsert({
+    const { error } = await this.client.from('vehicle_catalog').upsert({
       id: entry.id,
       unit_type: entry.type,
       make: entry.make,
@@ -658,11 +663,13 @@ export class SupabaseBackend implements BackendAdapter {
       fuel_type: entry.fuelType,
       est_km_per_liter: entry.estKmPerLiter,
     });
+    if (error) throw error;
     return entry;
   }
 
   async adminDeleteCatalog(id: string): Promise<void> {
-    await this.client.from('vehicle_catalog').delete().eq('id', id);
+    const { error } = await this.client.from('vehicle_catalog').delete().eq('id', id);
+    if (error) throw error;
   }
 
   async adminListAnnouncements(): Promise<Announcement[]> {
@@ -954,6 +961,7 @@ export class SupabaseBackend implements BackendAdapter {
 
   // ---- Admin: roles ----
   async adminSetUserRole(userId: string, role: UserRole): Promise<void> {
-    await this.client.from('users').update({ role }).eq('id', userId);
+    const { error } = await this.client.from('users').update({ role }).eq('id', userId);
+    if (error) throw error;
   }
 }
