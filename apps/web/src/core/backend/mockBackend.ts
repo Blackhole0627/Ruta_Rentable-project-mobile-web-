@@ -535,13 +535,13 @@ export class MockBackend implements BackendAdapter {
     const admin = await cloudDb.users.get(coop.adminId);
     let subscriptionActive = false;
     if (admin && admin.currentPlan === 'coop') {
-      const monthAgo = Date.now() - 31 * 86_400_000;
+      const coopPlan = await cloudDb.plans.get('coop');
+      const days = coopPlan?.durationDays && coopPlan.durationDays > 0 ? coopPlan.durationDays : 30;
+      const cutoff = Date.now() - days * 86_400_000;
       const recent = await cloudDb.payments
         .where('userId')
         .equals(coop.adminId)
-        .filter(
-          (p) => p.status === 'confirmed' && new Date(p.paidAt).getTime() > monthAgo,
-        )
+        .filter((p) => p.status === 'confirmed' && new Date(p.paidAt).getTime() > cutoff)
         .first();
       subscriptionActive = !!recent;
     }

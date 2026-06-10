@@ -417,6 +417,8 @@ export class SupabaseBackend implements BackendAdapter {
       priceUsd: Number(r.price_usd) || 0,
       calcLimit: r.calc_limit,
       features: Array.isArray(r.features) ? r.features : [],
+      capabilities: Array.isArray(r.capabilities) ? r.capabilities : undefined,
+      durationDays: r.duration_days ?? undefined,
       isActive: !!r.is_active,
     }));
   }
@@ -587,6 +589,8 @@ export class SupabaseBackend implements BackendAdapter {
       price_usd: plan.priceUsd,
       calc_limit: plan.calcLimit,
       features: plan.features,
+      capabilities: plan.capabilities ?? [],
+      duration_days: plan.durationDays ?? 30,
       is_active: plan.isActive,
     });
     return plan;

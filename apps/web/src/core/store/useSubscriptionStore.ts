@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { addMonths } from 'date-fns';
+import { addDays } from 'date-fns';
 import type {
   SubscriptionPlan,
   Subscription,
@@ -9,7 +9,12 @@ import type {
 import type { UserProfile } from '@shared/types/user.types';
 import { getBackend } from '../backend';
 import { useUserStore } from './useUserStore';
-import { hasCapability } from '../subscription/planAccess';
+import { hasCapability, defaultCapabilitiesFor } from '../subscription/planAccess';
+
+/** Days a paid cycle lasts for a plan (admin-set; falls back to 30). */
+function planDurationDays(plan: SubscriptionPlan | undefined): number {
+  return plan?.durationDays && plan.durationDays > 0 ? plan.durationDays : 30;
+}
 
 const backend = getBackend();
 
@@ -57,25 +62,40 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
         }
       : { ...user };
 
-    // Monthly expiry: a paid plan lasts 1 month from the last confirmed payment.
-    // Past that it lapses to 'overdue' (capabilities fall back to free).
+    // Expiry: a paid plan lasts `durationDays` (admin-set) from the last
+    // confirmed payment. Past that it lapses to 'overdue' (caps fall to free).
+    const planId = next.currentPlan ?? 'free';
+    const durationDays = planDurationDays(plans.find((p) => p.id === planId));
     const lastPaid = (payments ?? [])
       .filter((p) => p.status === 'confirmed')
       .sort((a, b) => b.paidAt.localeCompare(a.paidAt))[0];
-    const isPaidPlan = (next.currentPlan ?? 'free') !== 'free';
+    const isPaidPlan = planId !== 'free';
     if (lastPaid && isPaidPlan) {
-      const endsAt = addMonths(new Date(lastPaid.paidAt), 1);
+      const endsAt = addDays(new Date(lastPaid.paidAt), durationDays);
       next.subscriptionEndsAt = endsAt.toISOString();
       if (endsAt.getTime() < Date.now()) next.subscriptionStatus = 'overdue';
     } else {
       next.subscriptionEndsAt = undefined;
     }
 
+    // Snapshot the EFFECTIVE plan's admin-defined capabilities onto the user so
+    // gating across the app reflects whatever the admin configured.
+    const active =
+      next.subscriptionStatus === 'active' &&
+      (!next.subscriptionEndsAt ||
+        new Date(next.subscriptionEndsAt).getTime() >= Date.now());
+    const effId = active ? planId : 'free';
+    const effPlan = plans.find((p) => p.id === effId);
+    next.planCapabilities = effPlan?.capabilities ?? defaultCapabilitiesFor(effId);
+
+    const capsChanged =
+      (next.planCapabilities ?? []).join(',') !== (user.planCapabilities ?? []).join(',');
     const changed =
       next.currentPlan !== user.currentPlan ||
       next.subscriptionStatus !== user.subscriptionStatus ||
       (next.freeCalculationsUsed ?? 0) !== (user.freeCalculationsUsed ?? 0) ||
-      next.subscriptionEndsAt !== user.subscriptionEndsAt;
+      next.subscriptionEndsAt !== user.subscriptionEndsAt ||
+      capsChanged;
     if (changed) await useUserStore.getState().setUser(next);
 
     set({ plans, subscription, payments, isLoading: false });
@@ -100,7 +120,8 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
       currentPlan: planId,
       subscriptionStatus: 'active',
       freeCalculationsUsed: 0,
-      subscriptionEndsAt: addMonths(new Date(), 1).toISOString(),
+      subscriptionEndsAt: addDays(new Date(), planDurationDays(plan)).toISOString(),
+      planCapabilities: plan.capabilities ?? defaultCapabilitiesFor(planId),
       updatedAt: new Date(),
     });
     const [subscription, payments] = await Promise.all([

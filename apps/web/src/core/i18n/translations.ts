@@ -589,4 +589,12 @@ export const EN: Record<string, string> = {
     'The cooperative has reached the maximum of 20 drivers.',
   'El respaldo en la nube está disponible en los planes de pago.':
     'Cloud backup is available on paid plans.',
+
+  // ---- Admin: plan capabilities & duration ----
+  'Duración (días)': 'Duration (days)',
+  'Funciones que desbloquea': 'Features it unlocks',
+  'Duración: {n} días': 'Duration: {n} days',
+  'Respaldo en la nube': 'Cloud backup',
+  'Varios vehículos': 'Multiple vehicles',
+  'Cooperativa / flota': 'Cooperative / fleet',
 };

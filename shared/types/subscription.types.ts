@@ -1,5 +1,15 @@
 export type SubscriptionStatus = 'trial' | 'active' | 'overdue' | 'cancelled';
 
+/** Feature flags a plan can unlock. The admin toggles these per plan and the
+ * app gates real features off them (see core/subscription/planAccess). */
+export type PlanCapability =
+  | 'unlimitedCalc'
+  | 'reports'
+  | 'cloudSync'
+  | 'multiVehicle'
+  | 'breakEven'
+  | 'cooperative';
+
 export interface SubscriptionPlan {
   id: string;
   name: string;
@@ -7,7 +17,12 @@ export interface SubscriptionPlan {
   priceUsd?: number;
   /** null = unlimited calculations */
   calcLimit?: number | null;
+  /** Marketing bullet points shown on the plan card. */
   features?: string[];
+  /** Features this plan actually unlocks (admin-controlled gating). */
+  capabilities?: PlanCapability[];
+  /** Days a paid cycle lasts before it expires (default 30). */
+  durationDays?: number;
   isActive: boolean;
 }
 

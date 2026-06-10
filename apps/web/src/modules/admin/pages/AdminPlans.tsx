@@ -12,8 +12,19 @@ import { LoadingSkeleton } from '@/shared/components/LoadingSkeleton';
 import { formatCurrency } from '@/shared/utils/currency';
 import { AppIcons } from '@/shared/constants/icons';
 import { useI18n } from '@/core/i18n/i18n';
+import { ALL_CAPABILITIES, type Capability } from '@/core/subscription/planAccess';
 
 const backend = getBackend();
+
+/** Admin-facing labels for each feature flag a plan can unlock. */
+const CAP_LABELS: Record<Capability, string> = {
+  unlimitedCalc: 'Cálculos ilimitados',
+  reports: 'Reportes',
+  cloudSync: 'Respaldo en la nube',
+  multiVehicle: 'Varios vehículos',
+  breakEven: 'Punto de equilibrio',
+  cooperative: 'Cooperativa / flota',
+};
 
 export function AdminPlans() {
   const { t } = useI18n();
@@ -35,6 +46,8 @@ export function AdminPlans() {
       priceUsd: 0,
       calcLimit: null,
       features: [],
+      capabilities: [],
+      durationDays: 30,
       isActive: true,
     });
 
@@ -60,6 +73,9 @@ export function AdminPlans() {
               </p>
               <p className="text-sm text-road-500">
                 {plan.calcLimit == null ? t('Cálculos ilimitados') : t('{n} cálculos', { n: plan.calcLimit })}
+              </p>
+              <p className="text-xs text-road-400">
+                {t('Duración: {n} días', { n: plan.durationDays ?? 30 })}
               </p>
               <ul className="space-y-1 text-sm text-road-600">
                 {(plan.features ?? []).map((f) => (
@@ -133,15 +149,50 @@ function PlanEditor({
             />
           </div>
         </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <Label>{t('Límite de cálculos (vacío = ilimitado)')}</Label>
+            <Input
+              type="number"
+              value={draft.calcLimit ?? ''}
+              onChange={(e) =>
+                update({ calcLimit: e.target.value === '' ? null : Number(e.target.value) })
+              }
+            />
+          </div>
+          <div>
+            <Label>{t('Duración (días)')}</Label>
+            <Input
+              type="number"
+              min={1}
+              value={draft.durationDays ?? 30}
+              onChange={(e) => update({ durationDays: Number(e.target.value) || 30 })}
+            />
+          </div>
+        </div>
         <div>
-          <Label>{t('Límite de cálculos (vacío = ilimitado)')}</Label>
-          <Input
-            type="number"
-            value={draft.calcLimit ?? ''}
-            onChange={(e) =>
-              update({ calcLimit: e.target.value === '' ? null : Number(e.target.value) })
-            }
-          />
+          <Label>{t('Funciones que desbloquea')}</Label>
+          <div className="mt-1 grid grid-cols-1 gap-1.5 rounded-lg border border-road-200 p-3 sm:grid-cols-2">
+            {ALL_CAPABILITIES.map((cap) => {
+              const checked = (draft.capabilities ?? []).includes(cap);
+              return (
+                <label key={cap} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 accent-brand-500"
+                    checked={checked}
+                    onChange={(e) => {
+                      const set = new Set(draft.capabilities ?? []);
+                      if (e.target.checked) set.add(cap);
+                      else set.delete(cap);
+                      update({ capabilities: Array.from(set) });
+                    }}
+                  />
+                  {t(CAP_LABELS[cap])}
+                </label>
+              );
+            })}
+          </div>
         </div>
         <div>
           <Label>{t('Características (una por línea)')}</Label>

@@ -7,6 +7,7 @@ import { useSettingsStore } from './core/store/useSettingsStore';
 import { useAuthStore } from './core/store/useAuthStore';
 import { useSyncStore } from './core/store/useSyncStore';
 import { useCooperativeStore } from './core/store/useCooperativeStore';
+import { useSubscriptionStore } from './core/store/useSubscriptionStore';
 import { useOnlineStatus } from './shared/hooks/useOnlineStatus';
 import { runMigrations } from './core/db/migrations';
 import { LoadingSpinner } from './shared/components/LoadingSpinner';
@@ -39,10 +40,14 @@ export default function App() {
     if (isOnline && status === 'authenticated') sync();
   }, [isOnline, status, sync]);
 
-  // Resolve cooperative membership on sign-in so member drivers get fleet
-  // premium app-wide (not only after visiting the Cooperativa screen).
+  // On sign-in, refresh subscription (plan capabilities / expiry) and
+  // cooperative membership so feature gating is correct app-wide — not only
+  // after visiting the Subscription/Cooperativa screens.
   useEffect(() => {
-    if (status === 'authenticated') useCooperativeStore.getState().load();
+    if (status === 'authenticated') {
+      useSubscriptionStore.getState().load();
+      useCooperativeStore.getState().load();
+    }
   }, [status]);
 
   if (userLoading) {

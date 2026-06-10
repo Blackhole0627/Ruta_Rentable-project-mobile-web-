@@ -1,4 +1,4 @@
-import type { SubscriptionStatus } from './subscription.types';
+import type { SubscriptionStatus, PlanCapability } from './subscription.types';
 import type { UserRole } from './auth.types';
 
 export type Currency = 'NIO' | 'USD';
@@ -26,5 +26,9 @@ export interface UserProfile {
   /** True when the user belongs to a cooperative whose admin's plan is active
    * (grants premium to member drivers — they don't pay individually). */
   coopActive?: boolean;
+  /** Capabilities of the user's EFFECTIVE plan (free if expired). Denormalised
+   * from the admin-defined plan by the subscription store so gating reflects
+   * admin changes. */
+  planCapabilities?: PlanCapability[];
   updatedAt?: Date;
 }

@@ -119,6 +119,8 @@ function defaultPlans(): SubscriptionPlan[] {
       priceUsd: 0,
       calcLimit: 5,
       features: ['5 cálculos', 'Calculadora básica', 'Historial local'],
+      capabilities: [],
+      durationDays: 30,
       isActive: true,
     },
     {
@@ -128,6 +130,8 @@ function defaultPlans(): SubscriptionPlan[] {
       priceUsd: 3.5,
       calcLimit: null,
       features: ['Cálculos ilimitados', 'Historial en la nube', 'Reportes'],
+      capabilities: ['unlimitedCalc', 'reports', 'cloudSync'],
+      durationDays: 30,
       isActive: true,
     },
     {
@@ -137,6 +141,8 @@ function defaultPlans(): SubscriptionPlan[] {
       priceUsd: 7,
       calcLimit: null,
       features: ['Todo lo de Básico', 'Múltiples vehículos', 'Punto de equilibrio'],
+      capabilities: ['unlimitedCalc', 'reports', 'cloudSync', 'multiVehicle', 'breakEven'],
+      durationDays: 30,
       isActive: true,
     },
     {
@@ -146,6 +152,8 @@ function defaultPlans(): SubscriptionPlan[] {
       priceUsd: 42,
       calcLimit: null,
       features: ['Facturación grupal', 'Reportes de flota', 'Hasta 20 conductores'],
+      capabilities: ['unlimitedCalc', 'reports', 'cloudSync', 'multiVehicle', 'breakEven', 'cooperative'],
+      durationDays: 30,
       isActive: true,
     },
   ];
