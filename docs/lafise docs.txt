@@ -1,0 +1,1806 @@
+API Overview
+Welcome to LAFISE Poket API documentation. LAFISE Poket API is a cutting-edge financial solution that leverages on our vast banking experience over the past 30 years. With this API, LAFISE brings its expertise to the digital age, providing customers with easy-to-use, secure and reliable access to a range of financial services.
+
+📘
+Note:
+This documentation is for developers and technical managers who want to integrate with our services to offer a financial solution. For program details, rules, and further implementation guidance, please contact your LAFISE representative.
+
+📝 Poket Overview
+With our API, businesses can leverage our extensive experience in the financial industry to offer their customers a comprehensive suite of banking services, while reducing development time and costs. Our API supports a wide range of use cases, from simple balance inquiries to more complex financial transactions, providing businesses with the flexibility and scalability needed to stay competitive in today's digital landscape.
+
+📢 Who can use it
+Our Poket API enables third-party developers, startups, and fintechs to seamlessly integrate our financial products and services into their digital platforms.
+
+
+
+📘
+Note:
+The diagram above illustrates a Client that is a Home Institution that integrates Poket API.
+
+📖 How it works
+We offer various endpoints such as Account Information, Payment Initiation, Fund Transfer, Payment Status, Transaction History, and Account Holder, which allow users to manage their financial activities with ease. LAFISE's API utilizes advanced security measures, including OAuth 2.0 Authentication, SSL Encryption, Rate Limiting, and User Permissions, to ensure the security and stability of the platform. With LAFISE Poket API, our customers can access financial services seamlessly and efficiently, thus helping them to manage their finances more effectively.
+
+LAFISE Poket is organized around REST and uses built-in HTTP features, standard response codes, authentication and verbs, allowing for quick implementation with standard HTTP packages used in all languages. The API accepts requests with a JSON body and returns JSON responses.
+
+🔑 API Credentials
+To start using our API, you must first obtain credentials for your team, interested parties need to become an Poket Allied by contacting our Poket Corporate Banking Office. Our team will provide all the necessary information and support to help customers become an Poket Allies and gain access to the API. At LAFISE, we are committed to providing our customers with exceptional service and support, and our Corporate Banking team is always available to assist with any queries related to our Poket API. So, if you're interested in accessing our API and becoming an Poket Allied, please reach out to our Corporate Banking team today.
+
+📋 Next steps
+Once a relationship with LAFISE has been established, customers will receive three key pieces of information: a client_id, a secret, and an API key. These credentials are essential for accessing and using our Poket API, and will be provided to customers by our Corporate team.
+
+
+Once you have your credentials, to authenticate a request, you must first generate an Authorization Token using the "Authentication" API endpoint.
+
+✅ IP Address Whitelist
+As an additional security layer, LAFISE Poket API requires that your application's IP address be whitelisted before you can use the API. This means that we will only allow requests from the specific IP addresses that you have provided to us. By doing this, we help ensure that only authorized applications are accessing the API, thereby enhancing the security of our platform and protecting user data.
+
+To whitelist your application's IP address, please contact our Corporate Banking team and provide the necessary details. Our team will guide you through the process and ensure that your application is granted access to the API as soon as possible. At LAFISE, we take security very seriously, and this additional layer of protection is just one of the ways we ensure that our customers' data is safe and secure when using our Poket API.
+
+🌎 Regional Scope API
+Our Poket API is regional, covering Central America. To make requests to the API, you must specify the country code where your customer is located. The scope of the API currently covers five countries: Nicaragua (BLNI), Honduras (BLHN), Costa Rica (BLCR), Panamá (BLPA), and Dominican Republic (BLRD). This is an important feature as it allows you, as a developer, to target all the countries where LAFISE is present with a single integration to our API, streamlining the development process and reducing time-to-market for your products and services.
+
+The following country codes will allow you identifying which bank the request will be sent to and all related information.
+
+Code	Description
+BLNI	Banco LAFISE Nicaragua
+BLCR	Banco LAFISE Costa Rica
+BLHN	Banco LAFISE Honduras
+📝 Glossary
+Term	Description
+Access Token	A token which is retrieved by the Client after a successful access authorization flow. The access token is used by the API to authenticate Clients. The access token does not contain any information that the Client (or client's application) can use.
+API	Application Programming Interface. A set of definitions, protocols, and tools that can be used to create applications, interact with other applications, and exchange data.
+API Call	API call is a request towards an API which produces a response. The API is by design stateless, and therefore it does not "remember" anything about previous requests, i.e., there is no session. Therefore every request made towards the API must contain certain headers so that the API can authenticate and authorize the client.
+ASPSP	Account Servicing Payment Services Provider. An entity authorized to operate customer accounts, with a line of credit and payment facilities online.
+Authorization	Authorization is the process through which the Client obtains permission to access the Resource Owner's data and services at the bank.
+Authorization Code	An authorization code is a code provided to the Client during the access authorization flow; this code is short-lived and exchanged for an Access Token.
+Authorizer	Authorizer - Authorizers are strictly required for both account access and payment initiation requests. The minimum number of Authorizers is 1 although the customer may demand that two or more Authorizers act together, on the Resource Owner's behalf, to confirm any request.
+Authorizer Authentication	Authorizer authentication: the process which provides the correct identity of an Authorizer acting to confirm the access request or payment confirmation on behalf of the Resource Owner.
+Client	The client refers to the consumer of the API. This is commonly an application provided by the corporate customer or a regulated third-party provider.
+Consent	Consent is agreed between the Resource Owner (customer) and the Client (TPP). It includes what data may be shared, what services may be performed on the Resource Owner's behalf, the duration of the agreement and to what purpose the data/services are provided. Consent agreed between Resource Owner and Client, informs the access authorization flow.
+Sandbox	Sandbox, in the context of the Corporate APIs, is a test environment facility where the data returned by the API consists of example data. Its purpose is to mimic the real / production version of the API. The sandbox will always have available the latest published version of the API, this means that all new versions appear in sandbox before they are introduced into the production.
+Third-Party Provider (TPP)	A TPP is a regulated provider of one or more applications which Resource Owners (customers) can use to access their accounts/services via the API. A TPP is one type of API client/consumer. See also Corporate Direct Access.
+
+
+Using OAuth2
+OAuth2 provides a standard way to authorize access to protected resources, and our API supports both the authorization code and client credentials grant types. Developers can use OAuth2 to obtain access tokens that are valid for a limited time and can be used to make authenticated API calls.
+
+OAuth 2 is an authorization mechanism that gives you permission to a) Call LAFISE APIs and b) Access the end user’s data (given the user’s consent). This permission is encoded in an access token that you obtain through the OAuth operation "Authentication" that is described in this document. When you call a LAFISE API, you pass the access token to the Authorization header and the x-api-key in the request message, like this:
+
+Authorization
+x-api-key
+
+Authorization: Bearer
+eyJraWQiOiJSSGVcL1VWS0RSWEpleWRXZkkrZWpKY1MyVnVwWTV6MmVtWEdnRUg4dkx1RT0iLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiI2dXBvZGhscG45YTQ4anVkc3JkcTExa2ZlbSIsInRva2VuX3VzZSI6ImFjY2VzcyIsInNjb3BlIjoiY2F0YWxvZ3NcL2dldF9jYXRhbG9nX2RldGFpbF9ieV9jYXRhbG9nX2lkIGNhdGFsb2dzXC9nZXRfY2F0YWxvZ19ieV9jYXRhbG9nX2lkIGt5Y1wvY3VzdG9tZXJfa3ljX2NoZWNrIGNhdGFsb2dzXC9nZXRfY2F0YWxvZ3MiLCJhdXRoX3RpbWUiOjE2NzcwMjIyNTQsImlzcyI6Imh0dHBzOlwvXC9jb2duaXRvLWlkcC51cy1lYXN0LTEuYW1hem9uYXdzLmNvbVwvdXMtZWFzdC0xX0ZQb2lsRXRaSiIsImV4cCI6MTY3NzAyNTg1NCwiaWF0IjoxNjc3MDIyMjU0LCJ2ZXJzaW9uIjoyLCJqdGkiOiI4OWE2ODIwYy1iMWJhLTQ1YzUtYjA2Ny0yMGE1MmFjNWQ3MjIiLCJjbGllbnRfaWQiOiI2dXBvZGhscG45YTQ4anVkc3JkcTExa2ZlbSJ9.m1XkA7f2gvQaoCqZ-PkWrujGWIKNaqdNaEJhOvFZuzXtALwuUXChF4MjlWttn0G04OhoHZBGEWhnY2oWlw4YGAjlBTXhKvgt5lArPuJ0aLDqliBTIcQ7r7acbmyFPK_j52omkpK_smag1QlsjabKD1TsP8Jd0_Z4e56jYetS6CqYZ3L1SjxXJ7AktcErxSVFCDquL5YlstiBh72354bgWRpPSjaCPqXV_ST847JHkXonXDuhEraR1KVepdADIBHHnrsKjJqBYGBsuVJnW3h_KPR4FZHVr77JpRvIUCOCkd5fhJar-j2lg8SkLPBAcxNRvBxuq_of4kYudkCIRugpjg
+If the token is accepted, your request is passed along to the API, which then either succeeds or fails for its own reasons. However, if the token isn’t accepted, you’ll get a 401 HTTP status from our API gateway.
+
+To generate an access token, you must first request your credentials through our Corporate Banking Team and request access to the APIs that you want to use. If you haven’t registered as an Poket Allied yet, you should do so now contacting our Poket Team:
+
+
+The OAuth flow is your key to unlocking access tokens. There's no path to programatically create (or retrieve) API access credentials without our Corporate Team intervention.
+
+
+
+Authentication
+post
+https://poket-api-qa.lafise.com/oauth2/token
+
+The Authentication endpoint for LAFISE Open Banking API generates an OAuth 2.0 token that is required to validate any API call. The token serves as a secure and reliable method of authentication, ensuring that only authorized users can access the API.
+
+Recent Requests
+Log in to see full request history
+Time	Status	User Agent	
+Make a request to see history.
+0 Requests This Month
+
+The OAuth 2.0 token generated by the Authentication endpoint is valid for 60 minutes or 3,600 seconds. After this time, the token will expire, and a new token must be generated to continue accessing the API. This helps ensure that user data remains secure, and only authorized parties have access to the API.
+
+To obtain an OAuth 2.0 token, users must authenticate themselves using their API credentials. Once authenticated, the token is generated, and users can use it to access the various endpoints of the API. At LAFISE, we take security very seriously, and the Authentication endpoint is just one of the ways we ensure that our Poket API is secure and reliable for our customers.
+
+Once you have generated a token, to authenticate a request, you must include your api-key and Authorizations in the request header for all requests (POST, PUT, GET and DELETE).
+
+Key	Type	Required/Optional	Description
+Authorization	String	Required	Contains the word: "Bearer" and a blank space followed by the Token generated by the Authentication Token API Call.
+📘
+Regional availability
+Below we show the availability of the API by country
+
+Country	Status
+BLNI	✅ Available
+BLPA	❌ Unavailable
+BLHN	✅ Available
+BLRD	❌ Unavailable
+BLCR	✅ Available
+Form Data
+grant_type
+string
+Defaults to client_credentials
+The term “grant type” refers to the way an application gets an access token. The value for the grant_type must be: "client_credentials"
+
+client_credentials
+Headers
+Content-Type
+string
+Defaults to application/x-www-form-urlencoded
+The Content-Type header with a value of application/x-www-form-urlencoded is used in the API call to specify the format of the data being sent to the server. This header is used as it encodes the data in a way that is compatible with HTML form submissions.
+
+application/x-www-form-urlencoded
+x-api-key
+string
+Defaults to Specific for each customer
+The API-Key is a unique API key or access token that is generated by our Corporate Banking team.
+
+Specific for each customer
+Responses
+
+200
+200
+
+
+400
+400
+
+
+401
+401
+
+
+500
+500
+
+
+El consumidor
+Un consumidor es toda aquella aplicación que consuma las APIS de creación de Link de Pago, siguiendo el estándar OpenBanking establecido de integración de terceros. El consumidor es el que en última instancia se encarga de definir las reglas de negocio para crear o actualizar un enlace, llevar control interno de los enlaces creados y relacionarlo con sus propias entidades, y aplicar lógica de negocio ante los eventos de pago, delegando al sistema de enlaces de pago la lógica de ejecución de un pago y su notificación al consumidor.
+
+Creación de un enlace pago
+El enlace de pago debe ser creado mediante el endpoint correspondiente, brindando la información necesaria según los métodos de pago a habilitar (por ejemplo, pago con tarjeta necesita del terminal procesador o por transferencia necesita el número de cuenta a acreditar). El consumidor debe manejar su lógica de negocio y validaciones previa a la creación del enlace según corresponda, almacenar la información y relacionar a sus entidades, y presentar o redirigir al pagador al sitio de pago.
+
+
+⚠️
+Sobre la seguridad
+El consumo de las APIS de Link de Pago debe hacerse exclusivamente desde un backend y no directamente desde el cliente, según indica el tipo de seguridad OAuth2 bajo las que se integra. Leer más
+
+
+Integración de eventos (webhook)
+Una vez generado un enlace de pago, este está listo para ser pagado por cualquiera de los métodos configurados. Esto genera dos eventos: inicio de intento y final de intento
+
+Eventos de pago
+Un intento de pago se inicia desde el momento en el que el pagador dentro de nuestro sitio confirma el método de pago, y el sitio le redirige donde corresponde para completar el pago (por ejemplo, si escoge pagar con tarjeta se le redirige a un formulario donde completará la información de la tarjeta); y se termina en el momento que el método de pago termina de procesar, pudiendo ser exitoso o fallido.
+
+
+ℹ️
+Sobre la seguridad de los webhooks
+Los webhooks pueden ser accesibles via internet o VPN (requiere configuración adicional de conectividad por parte de LAFISE). Se soporta autenticación Basic y OAuth2 con client credentials, y API KEY.
+
+Inicio del pago
+Al momento de iniciar un intento, el consumidor puede configurar un endpoint que funcione como webhook para realizar validaciones y reglas de negocio propias.
+
+Si se rechaza el intento de pago, el webhook debe responder con código HTTP 400 (BAD REQUEST), de lo contrario si se acepta, debe responder HTTP 200 OK.
+
+Información provista al endpoint 'StartPayment'
+
+{
+  "event_type": "StartPayment",
+  "external_link_id": "7af00cef-9ab6-438a-bc5a-7d18b4bea581",
+  "terminal_id": "2ee15e6f-0a73-4613-92bc-9fdaee45bff5",
+  "amount": 150,
+  "currency": "NIO",
+  "description": "Tramite 123456",
+  "location_latitude": 40.7128,
+  "location_longitude":74.0060 
+}
+Final del pago
+Al finalizar un intento de pago, el consumidor puede configurar un endpoint que funcione como webhook para recibir la notificación de intento finalizado. El intento puede ser exitoso o fallido, en ambos casos será notificado de igual manera, agregando información correspondiente al estado (por ejemplo, agregando el motivo de error en caso fallido o agregando información del pagador en caso exitoso).
+
+Un pago es exitoso cuando el método de pago procesa correctamente.
+
+Un intento es fallido cuando el método de pago rechaza el pago por cualquier motivo (por ejemplo, tarjeta sin fondos, bloqueada, expirada, transacción insegura) o cuando el pagador sobrepasa una determinada cantidad de tiempo sin interacción luego de iniciar el proceso (en este caso se declara el intento fallido por timeout-no payer response). Un pago fallido puede ser reintentado hasta completar la cantidad máxima de intentos configurados al momento de crear el enlace.
+
+Información provista al endpoint 'FinishPayment', caso pago exitoso
+
+{
+  "event_type": "FinishPayment",
+  "external_link_id": "e6dbd30b-1af3-4c8a-89ab-be1485a46420",
+  "try_id": "d176b783-f1cf-4058-afa6-9deb7b70aa49",
+  "status": "Authorized",
+  "currency": "NIO",
+  "card": "7485",
+  "card_bearer": "Ana Juarez",
+  "card_brand": "002",
+  "authorized_at": "2025-03-20T21:22:30.094Z"
+}
+Información provista al endpoint 'FinishPayment' caso intento fallido
+
+{
+  	"event_type": "FinishPayment",
+  	"external_link_id": "9b57a83a-fe05-4e4c-bb76-ca60dcc231bb",
+    "status": "Failed",
+    "currency": "NIO",
+    "card": "7485",
+    "card_bearer": "Ana Juarez",
+    "card_brand": "002",
+    "authorized_at": "2025-03-20T21:22:30.094Z",
+    "error": "RejectedByAuthorizer",
+    "error_reason": "51 - Fondos insuficientes"
+}
+⚠️
+Sobre el proceso propio del webhook de final de pago
+Recomendamos este proceso a ejecutar al finalizar un intento corto y conciso. Si el proceso es complejo o involucra a más actores, recomendamos ejecutar una acción asíncrona al invocar el webhook.
+
+El llamado al webhook del consumidor no impacta la experiencia del pagador en nuestro sitio y la respuesta de este endpoint no es utilizada por nuestro proceso.
+
+
+Get PayLink By Id
+get
+https://poket-api-qa.lafise.com/api/v1/paylinks/{IdPaylink}
+
+Consulta un enlace de pago por su ID
+
+Recent Requests
+Log in to see full request history
+Time	Status	User Agent	
+Make a request to see history.
+0 Requests This Month
+
+Este Endpoint permite consultar los detalles de un enlace de pago ("PayLink") a través de su identificador único("Id"). Se podrá visualizar la información completa del enlace de pago consultado.
+
+La operación consiste en:
+
+Consulta el repositorio de "PayLinks" y busca un enlace con el "Id" proporcionado.
+Si no se encuentra el "PayLink", retorna error 404
+Si se encuentra, se transforma la entidad en un DTO de respuesta ("GetPayLinkByIdDto").
+📥 Ejemplo de Request> Path Param: PAYLINK_ID = 94a09a29-e515-4498-b09b-1945a04454db
+
+Path Params
+IdPaylink
+string
+required
+Id Pay Link
+
+Responses
+
+200
+200
+
+
+400
+400
+
+
+500
+500
+
+Updated about 1 year ago
+
+What’s Next
+Integración de un consumidor
+Did this page help you?
+Language
+
+Shell
+
+Node
+
+Ruby
+
+PHP
+
+Python
+Credentials
+Basic
+base64
+username
+:
+password
+
+1
+curl --request GET \
+2
+     --url https://poket-api-qa.lafise.com/api/v1/paylinks/IdPaylink \
+3
+     --header 'accept: application/json' \
+4
+     --header 'x-api-key: G3yCDUD91N4nW6YghwTdjJoA32gauL36pq2mWZH1'
+
+Try It!
+Response
+Click Try It! to start a request and see the response here! Or choose an example:
+application/json
+
+200 - Result
+
+400 - Result
+
+500 - Result
+
+
+Get Pay Links
+get
+https://poket-api-qa.lafise.com/api/v1/paylinks
+
+Retorna un listado de todos los links creados por el consumidor
+
+Recent Requests
+Log in to see full request history
+Time	Status	User Agent	
+Make a request to see history.
+0 Requests This Month
+
+Este endpoint permite obtener una lista paginada de enlaces de pago ("PayLinks") asociados a un consumidor, identificado mediante el "AppClientId" proporcionado por el contexto.
+
+La operación consiste en:
+
+Se obtiene el consumidor actual mediante "AppClientId". Si no se encuentra, se lanza una excepción.
+Se consultan los "PayLinks" que pertenecen a ese consumidor.
+Se aplica paginación a la colección, ordenando por fecha de creación descendente.
+Se transforma el resultado paginado a una lista de DTOs ("GetPayLinkDto").
+Se genera y retorna una respuesta estructurada paginada ("PagedResponse"), que incluye:
+Lista de resultados paginados.
+Total de elementos.
+Página actual.
+Tamaño de página.
+📥 Ejemplo de Request
+Query Params: page: 1 page_size: 20
+
+Query Params
+page
+int32
+page_size
+int32
+Responses
+
+200
+200
+
+
+400
+400
+
+
+500
+500
+
+Updated about 1 year ago
+
+Get PayLink By Id
+Create Pay Link
+Did this page help you?
+Language
+
+Shell
+
+Node
+
+Ruby
+
+PHP
+
+Python
+Credentials
+Basic
+base64
+username
+:
+password
+
+1
+curl --request GET \
+2
+     --url https://poket-api-qa.lafise.com/api/v1/paylinks \
+3
+     --header 'accept: application/json' \
+4
+     --header 'x-api-key: G3yCDUD91N4nW6YghwTdjJoA32gauL36pq2mWZH1'
+
+Try It!
+Response
+Click Try It! to start a request and see the response here! Or choose an example:
+application/json
+
+200 - Result
+
+400 - Result
+
+500 - Result
+
+Create Pay Link
+post
+https://poket-api-qa.lafise.com/api/v1/paylinks
+
+Crea un enlace de pago
+
+Recent Requests
+Log in to see full request history
+Time	Status	User Agent	
+Retrieving recent requests…
+
+Este endpoint permite crear un enlace de pago asociado a un dominio (Consumer). El enlace puede configurarse con diferentes metodos de pago y configuraciones especificas para cada uno. Antes de crear el enlace, se validan las siguientes condiciones:
+
+La operación consiste en:
+
+El "Consumer" debe existir y estar asociado al AppClient actual.
+Solo se permiten métodos de pago que estén habilitados en el "AllowedMethods" del "Consumer" (Cybersource, TransactionDxp).
+Los métodos definidos en las configuraciones deben coincidir exactamente con los métodos definidos en el "payLink".
+Si no se especifica el número máximo de intentos ("MaxTries"), se asigna un valor por defecto de 5.
+Una vez creado el enlance, tambien se crean las configuraciones correspondientes ("LinkConfigurations"), asociadas al "PayLinkId".
+📥 Ejemplo de Request
+
+JSON
+
+{
+  "amount": 2500,
+  "currency": "CRC",
+  "max_tries": 5,
+  "description": "Pruebas",
+  "methods": [
+    "Cybersource"
+  ],
+  "expiration_date": "2026-05-05T22:49:25.204Z",
+  "collector_display_name": "El Rincón Dev",
+  "collector_photo": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTIeWOb723GnYTwdMZ4OAzmHzAmAKkadPzsGA&s",
+  "configurations": [
+    {
+      "method": "Cybersource",
+      "configuration": {
+        "terminal_id": "02a0191b-1fc1-4e9b-a619-f9597a726c10",
+        "transacting_mid": "blni_tiendachina001",
+        "callback_url": "https://poket.ni/centro-ayuda",
+"callback_time":30
+
+      }
+    }
+  ]
+}
+ℹ️
+Info
+collector_photo La foto debe ser una URL pública, preferiblemente de un CDN
+
+ℹ️
+Info
+Solicitar transacting_mid al banco. En producción debe estar asociado a un comercio y un terminal de tipo ecommerce de ese comercio en la plataforma adquirente, liquidando sus transacciones a la cuenta del comercio asociado. En caso que el consumidor manipule múltiples transacting_mid, considerar la lógica de negocio correspondiente
+
+ℹ️
+Info
+El campo de callback_url es opcional, se ejecuta al termino de un pago de forma exitosa o no, aplica un redireccionamiento hacia una url personalizada del comercio
+
+Body Params
+id
+string
+id
+
+name
+string
+name
+
+description_consumer
+string
+description consumer
+
+amount
+double
+amount
+
+max_tries
+int32
+max tries
+
+currency
+string
+currency
+
+description
+string
+description
+
+status
+string
+status
+
+expiration_date
+string
+expiration_date
+
+configurations
+object
+configurations
+
+
+configurations object
+configuration
+object
+
+configuration object
+Responses
+
+200
+200
+
+
+400
+400
+
+
+500
+500
+
+Updated 2 months ago
+
+What’s Next
+Integración de un consumidor
+Did this page help you?
+Language
+
+Shell
+
+Node
+
+Ruby
+
+PHP
+
+Python
+Credentials
+Basic
+base64
+username
+:
+password
+
+1
+curl --request POST \
+2
+     --url https://poket-api-qa.lafise.com/api/v1/paylinks \
+3
+     --header 'accept: application/json' \
+4
+     --header 'content-type: application/json' \
+5
+     --header 'x-api-key: G3yCDUD91N4nW6YghwTdjJoA32gauL36pq2mWZH1'
+
+Try It!
+Response
+Click Try It! to start a request and see the response here! Or choose an example:
+application/json
+
+200 - Result
+
+400 - Result
+
+500 - Result
+
+
+
+Update Pay Link
+patch
+https://poket-api-qa.lafise.com/api/v1/paylinks/{Id}
+
+Actualiza un link de pago
+
+Recent Requests
+Log in to see full request history
+Time	Status	User Agent	
+Make a request to see history.
+
+Este endpoint permite actualizar un enlace de pago asociado a un consumidor autenticado. Además de modificar los datos principales del enlace de pago, tambien valida y actualiza su configuración asociada ("LinkConfiguration").
+
+La operación consiste en:
+
+Verificación del consumidor actual mediante "AppClientId". Si no se encuentra, lanza una excepción.
+Búsqueda del PayLink por su ID. Si no existe, lanza una excepción.
+Validación de que el PayLink pertenece al consumidor actual; si no, lanza una excepción.
+Si se proporcionan configuraciones en la solicitud, se valida que los métodos incluidos estén permitidos por el consumidor.
+Se mapean los datos del modelo de entrada al PayLink existente, actualizando también la lista de métodos asociados.
+Se actualiza el PayLink y se persiste en base de datos.
+Se busca y actualiza la entidad LinkConfiguration correspondiente al PayLink:
+Si no se encuentra, lanza una excepción.
+Se actualiza el método y la configuración serializada en JSON.
+Finalmente, se retorna un DTO ("UpdatePayLinkDto") con los datos actualizados del PayLink.
+📥 Ejemplo de Request
+Path Param: PAYLINK_ID = 94a09a29-e515-4498-b09b-1945a04454db
+
+JSON
+
+{
+  "configurations": [
+    {
+      "method": "Cybersource",
+      "configuration": {
+        "terminal_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "transacting_mid": "blni_tiendachina001"
+      }
+    }
+  ],
+  "expiration_date": "2026-05-06T15:53:49.679Z"
+}
+ℹ️
+Info
+Solo se pueden actualizar la configuración y la fecha de expiración
+
+Body Params
+configurations
+object
+configurations
+
+
+configurations object
+expiration_date
+string
+expiration_date
+
+Responses
+
+200
+200
+
+
+400
+400
+
+
+500
+500
+
+Updated about 1 year ago
+
+Create Pay Link
+Delete Pay Link
+Did this page help you?
+Language
+
+Shell
+
+Node
+
+Ruby
+
+PHP
+
+Python
+Credentials
+Basic
+base64
+username
+:
+password
+
+1
+curl --request PATCH \
+2
+     --url https://poket-api-qa.lafise.com/api/v1/paylinks/Id \
+3
+     --header 'accept: application/json' \
+4
+     --header 'content-type: application/json' \
+5
+     --header 'x-api-key: G3yCDUD91N4nW6YghwTdjJoA32gauL36pq2mWZH1'
+
+Try It!
+Response
+Click Try It! to start a request and see the response here! Or choose an example:
+application/json
+
+200 - Result
+
+400 - Result
+
+500 - Result
+
+
+Delete Pay Link
+delete
+https://poket-api-qa.lafise.com/api/v1/paylinks/{IdPaylink}
+
+Borrar un link de pago
+
+Recent Requests
+Log in to see full request history
+Time	Status	User Agent	
+Retrieving recent requests…
+
+Este endpoint permite realizar la eliminación lógica de un enlace de pago ("PayLink") identificado por su "PayLinkId".
+
+La operación consiste en:
+
+Verificar que el enlace de pago exista.
+Cambiar su estado ("Status") a Cancelled, reflejando que el enlace ha sido anulado.
+Busca su configuración ("LinkConfiguration") y si existe la elimina.
+⚠️
+Advertencia
+Esta acción no elimina físicamente el registro del "PayLink" en base de datos, pero lo marca como desactivado para evitar su uso posterior.
+
+📥 Ejemplo de Request
+Path Param: PAYLINK_ID = 1bd29fd2-093f-46d6-9619-797b8af70bf0
+
+Path Params
+IdPaylink
+string
+required
+Id Pay Link
+
+Responses
+
+200
+200
+
+
+400
+400
+
+
+500
+500
+
+Updated about 1 year ago
+
+Update Pay Link
+Exportaciones disponibles
+Did this page help you?
+Language
+
+Shell
+
+Node
+
+Ruby
+
+PHP
+
+Python
+Credentials
+Basic
+base64
+username
+:
+password
+
+1
+curl --request DELETE \
+2
+     --url https://poket-api-qa.lafise.com/api/v1/paylinks/IdPaylink \
+3
+     --header 'accept: application/json' \
+4
+     --header 'x-api-key: G3yCDUD91N4nW6YghwTdjJoA32gauL36pq2mWZH1'
+
+Try It!
+Response
+Click Try It! to start a request and see the response here! Or choose an example:
+application/json
+
+200 - Result
+
+400 - Result
+
+500 - Result
+
+
+
+Exportaciones disponibles
+Para facilitar la integración y el testeo de nuestros endpoints, hemos preparado una colección de Postman lista para usar. Esta colección incluye todas las solicitudes preconfiguradas con sus respectivos encabezados, parámetros y cuerpos de ejemplo para los métodos GET, POST, PUT y DELETE.
+
+
+Configuración inmediata:
+Solo importa el archivo y define tu variable de entorno base_url.
+
+Scripts de prueba:
+Incluye validaciones automáticas de estados HTTP y estructuras JSON.
+
+Instrucciones de Configuración
+Copiar el contenido:
+Haz clic en el botón "Copiar" del bloque de código inferior para obtener el JSON completo de la colección.
+
+Crear el archivo local:
+Crea un nuevo archivo en tu computadora y nómbralo exactamente así:
+
+Colección Poket - Link de pagos.postman_collection.json
+
+Guardar:
+Pega el contenido copiado dentro del archivo y asegúrate de guardarlo con la extensión .json.
+
+Importar a Postman:
+Abre Postman, ve a File > Import y arrastra el archivo que acabas de crear.
+
+JSON
+
+{
+  "info": {
+    "_postman_id": "2c2cda20-d07f-4c0d-80e4-754650f9088b",
+    "name": "Colección Poket - Link de pagos QA Clean",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "31251286"
+  },
+  "item": [
+    {
+      "name": "🔐Autenticación",
+      "item": [
+        {
+          "name": "Autenticación",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "tests[\"Status code is 200\"] = responseCode.code === 200;\r",
+                  "var data = JSON.parse(responseBody);\r",
+                  "pm.collectionVariables.set(\"token_bearer\", data.access_token);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "password",
+                  "value": "xxxxxxx",
+                  "type": "string"
+                },
+                {
+                  "key": "username",
+                  "value": "xxxxxxx",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded",
+                "type": "default"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "client_credentials",
+                  "type": "default"
+                }
+              ]
+            },
+            "url": {
+              "raw": "https://poket-api-qa.lafise.com/oauth2/token",
+              "protocol": "https",
+              "host": [
+                "poket-api-qa",
+                "lafise",
+                "com"
+              ],
+              "path": [
+                "oauth2",
+                "token"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Administracion",
+      "item": [
+        {
+          "name": "Consulta por Id",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_bearer}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{token_bearer}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "default"
+              },
+              {
+                "key": "x-api-key",
+                "value": "xxxxxxx",
+                "type": "default"
+              }
+            ],
+            "url": {
+              "raw": "https://poket-api-qa.lafise.com/api/v1/paylinks/:IdPaylink",
+              "protocol": "https",
+              "host": [
+                "poket-api-qa",
+                "lafise",
+                "com"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "paylinks",
+                ":IdPaylink"
+              ],
+              "variable": [
+                {
+                  "key": "IdPaylink",
+                  "value": "b73b9bf5-b053-4847-b419-8773b5c9404d"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Consulta por Id",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "default"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "o5R61cdckaanPMS2C4DtX45pmeTtiIUU6dpB9Uwe",
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "https://poket-api-qa.lafise.com/api/v1/paylinks/:IdPaylink",
+                  "protocol": "https",
+                  "host": [
+                    "poket-api-qa",
+                    "lafise",
+                    "com"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "paylinks",
+                    ":IdPaylink"
+                  ],
+                  "variable": [
+                    {
+                      "key": "IdPaylink",
+                      "value": "a85893de-5f5c-4802-9f4d-3c1d921d98a2"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": ":status",
+                  "value": 200
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "content-length",
+                  "value": "570"
+                },
+                {
+                  "key": "date",
+                  "value": "Mon, 02 Mar 2026 16:15:16 GMT"
+                },
+                {
+                  "key": "x-amzn-remapped-date",
+                  "value": "Mon, 02 Mar 2026 16:15:16 GMT"
+                },
+                {
+                  "key": "x-amzn-requestid",
+                  "value": "e9cb7ebe-f057-44af-bda2-fe32632d4f72"
+                },
+                {
+                  "key": "api-supported-versions",
+                  "value": "1.0"
+                },
+                {
+                  "key": "x-amzn-remapped-connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "x-amz-apigw-id",
+                  "value": "ZmmfLGyvIAMFd3g="
+                },
+                {
+                  "key": "x-amzn-remapped-server",
+                  "value": "Kestrel"
+                },
+                {
+                  "key": "x-amzn-trace-id",
+                  "value": "Root=1-69a5b793-3b32730950aca09d5960f555"
+                },
+                {
+                  "key": "x-cache",
+                  "value": "Miss from cloudfront"
+                },
+                {
+                  "key": "via",
+                  "value": "1.1 800cba2437ee092ab9e4755c65d34a72.cloudfront.net (CloudFront)"
+                },
+                {
+                  "key": "x-amz-cf-pop",
+                  "value": "DFW57-P1"
+                },
+                {
+                  "key": "x-amz-cf-id",
+                  "value": "4cNJAahc8NRwfoSJ9ZV-_eB_sT45piwopMwOof0SZdsPuVC85z-SnA=="
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"consumer\": {\n        \"id\": \"2c86c06c-1b1d-4895-88e3-cc19acd18fde\",\n        \"name\": \"IJSUDWeb\"\n    },\n    \"id\": \"a85893de-5f5c-4802-9f4d-3c1d921d98a2\",\n    \"amount\": 2500,\n    \"max_tries\": 5,\n    \"currency\": \"CRC\",\n    \"description\": \"Pruebas\",\n    \"methods\": [\n        \"Cybersource\"\n    ],\n    \"status\": \"Created\",\n    \"expiration_date\": \"2026-05-05T22:49:25.204Z\",\n    \"created_at\": \"2026-03-02T16:06:11.595615Z\",\n    \"collector_display_name\": \"El Rincón Dev\",\n    \"collector_photo\": \"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTIeWOb723GnYTwdMZ4OAzmHzAmAKkadPzsGA&s\",\n    \"pay_link_url\": \"https://qa.pagoconpoket.com/payment/a85893de-5f5c-4802-9f4d-3c1d921d98a2\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Eliminar",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_bearer}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{token_bearer}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "default"
+              },
+              {
+                "key": "x-api-key",
+                "value": "xxxxxxx",
+                "type": "default"
+              }
+            ],
+            "url": {
+              "raw": "https://poket-api-qa.lafise.com/api/v1/paylinks/:IdPaylink",
+              "protocol": "https",
+              "host": [
+                "poket-api-qa",
+                "lafise",
+                "com"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "paylinks",
+                ":IdPaylink"
+              ],
+              "variable": [
+                {
+                  "key": "IdPaylink",
+                  "value": "a85893de-5f5c-4802-9f4d-3c1d921d98a2"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Eliminar",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "default"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "o5R61cdckaanPMS2C4DtX45pmeTtiIUU6dpB9Uwe",
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "https://poket-api-qa.lafise.com/api/v1/paylinks/:IdPaylink",
+                  "protocol": "https",
+                  "host": [
+                    "poket-api-qa",
+                    "lafise",
+                    "com"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "paylinks",
+                    ":IdPaylink"
+                  ],
+                  "variable": [
+                    {
+                      "key": "IdPaylink",
+                      "value": "a85893de-5f5c-4802-9f4d-3c1d921d98a2"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": ":status",
+                  "value": 200
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "content-length",
+                  "value": "2"
+                },
+                {
+                  "key": "date",
+                  "value": "Mon, 02 Mar 2026 16:18:29 GMT"
+                },
+                {
+                  "key": "x-amzn-remapped-date",
+                  "value": "Mon, 02 Mar 2026 16:18:29 GMT"
+                },
+                {
+                  "key": "x-amzn-requestid",
+                  "value": "3a97b826-c279-4407-a707-c4b9df6ac7c5"
+                },
+                {
+                  "key": "api-supported-versions",
+                  "value": "1.0"
+                },
+                {
+                  "key": "x-amzn-remapped-connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "x-amz-apigw-id",
+                  "value": "Zmm9XGEAIAMFdyA="
+                },
+                {
+                  "key": "x-amzn-remapped-server",
+                  "value": "Kestrel"
+                },
+                {
+                  "key": "x-amzn-trace-id",
+                  "value": "Root=1-69a5b855-3c704d1940ae4b377eff5c7a"
+                },
+                {
+                  "key": "x-cache",
+                  "value": "Miss from cloudfront"
+                },
+                {
+                  "key": "via",
+                  "value": "1.1 8139bc666c011a53bdc5037ba6d5931e.cloudfront.net (CloudFront)"
+                },
+                {
+                  "key": "x-amz-cf-pop",
+                  "value": "DFW57-P1"
+                },
+                {
+                  "key": "x-amz-cf-id",
+                  "value": "7GCwlxrzEZM-Qj5HqaFSquX-GRkm8i2mwWelNw32VJXoyJObKjuq6Q=="
+                }
+              ],
+              "cookie": [],
+              "body": "{}"
+            }
+          ]
+        },
+        {
+          "name": "Consultas",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_bearer}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{token_bearer}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "default"
+              },
+              {
+                "key": "x-api-key",
+                "value": "xxxxxxx",
+                "type": "default"
+              }
+            ],
+            "url": {
+              "raw": "https://poket-api-qa.lafise.com/api/v1/paylinks",
+              "protocol": "https",
+              "host": [
+                "poket-api-qa",
+                "lafise",
+                "com"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "paylinks"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Consultas",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "default"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "o5R61cdckaanPMS2C4DtX45pmeTtiIUU6dpB9Uwe",
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "https://poket-api-qa.lafise.com/api/v1/paylinks",
+                  "protocol": "https",
+                  "host": [
+                    "poket-api-qa",
+                    "lafise",
+                    "com"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "paylinks"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": ":status",
+                  "value": 200
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "content-length",
+                  "value": "886"
+                },
+                {
+                  "key": "date",
+                  "value": "Mon, 02 Mar 2026 16:14:51 GMT"
+                },
+                {
+                  "key": "x-amzn-remapped-date",
+                  "value": "Mon, 02 Mar 2026 16:14:51 GMT"
+                },
+                {
+                  "key": "x-amzn-requestid",
+                  "value": "dc6b0f77-ce88-405c-b60b-e5e85bd2a15c"
+                },
+                {
+                  "key": "api-supported-versions",
+                  "value": "1.0"
+                },
+                {
+                  "key": "x-amzn-remapped-connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "x-amz-apigw-id",
+                  "value": "ZmmbLFbpIAMFQ1A="
+                },
+                {
+                  "key": "x-amzn-remapped-server",
+                  "value": "Kestrel"
+                },
+                {
+                  "key": "x-amzn-trace-id",
+                  "value": "Root=1-69a5b77a-066491191e22baa156c1b1b1"
+                },
+                {
+                  "key": "x-cache",
+                  "value": "Miss from cloudfront"
+                },
+                {
+                  "key": "via",
+                  "value": "1.1 800cba2437ee092ab9e4755c65d34a72.cloudfront.net (CloudFront)"
+                },
+                {
+                  "key": "x-amz-cf-pop",
+                  "value": "DFW57-P1"
+                },
+                {
+                  "key": "x-amz-cf-id",
+                  "value": "COKMgqje9Mahbfq4nI3om_Jj9pYxsSUtWHnwG7-pDu3zCZQrfAnAvw=="
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"items\": [\n        {\n            \"id\": \"a85893de-5f5c-4802-9f4d-3c1d921d98a2\",\n            \"amount\": 2500,\n            \"max_tries\": 5,\n            \"currency\": \"CRC\",\n            \"description\": \"Pruebas\",\n            \"methods\": [\n                \"Cybersource\"\n            ],\n            \"status\": \"Created\",\n            \"expiration_date\": \"2026-05-05T22:49:25.204Z\",\n            \"created_at\": \"2026-03-02T16:06:11.595615Z\",\n            \"collector_display_name\": \"El Rincón Dev\",\n            \"collector_photo\": \"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTIeWOb723GnYTwdMZ4OAzmHzAmAKkadPzsGA&s\"\n        },\n        {\n            \"id\": \"ccb26d47-0801-4da0-a1ad-cf97218c36ee\",\n            \"amount\": 2500,\n            \"max_tries\": 5,\n            \"currency\": \"CRC\",\n            \"description\": \"Pruebas\",\n            \"methods\": [\n                \"Cybersource\"\n            ],\n            \"status\": \"Created\",\n            \"expiration_date\": \"2026-05-05T22:49:25.204Z\",\n            \"created_at\": \"2026-03-02T16:06:00.339521Z\",\n            \"collector_display_name\": \"El Rincón Dev\",\n            \"collector_photo\": \"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTIeWOb723GnYTwdMZ4OAzmHzAmAKkadPzsGA&s\"\n        }\n    ],\n    \"page_number\": 1,\n    \"page_size\": 20,\n    \"total_count\": 2,\n    \"total_pages\": 1\n}"
+            }
+          ]
+        },
+        {
+          "name": "Crear",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_bearer}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{token_bearer}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-api-key",
+                "value": "xxxxxxx"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"amount\": 2500,\n    \"currency\": \"CRC\",\n    \"max_tries\": 5,\n    \"description\": \"Pruebas\",\n    \"methods\": [\n        \"Cybersource\"\n    ],\n    \"expiration_date\": \"2026-05-05T22:49:25.204Z\",\n    \"collector_display_name\": \"El Rincón Dev\",\n    \"collector_photo\": \"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTIeWOb723GnYTwdMZ4OAzmHzAmAKkadPzsGA&s\",\n    \"configurations\": [\n        {\n            \"method\": \"Cybersource\",\n            \"configuration\": {\n                \"terminal_id\": \"02a0191b-1fc1-4e9b-a619-f9597a726c10\",\n                \"transacting_mid\": \"testlafise_ijsud\"\n            }\n        }\n    ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "https://poket-api-qa.lafise.com/api/v1/paylinks",
+              "protocol": "https",
+              "host": [
+                "poket-api-qa",
+                "lafise",
+                "com"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "paylinks"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Crear",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "content-type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "o5R61cdckaanPMS2C4DtX45pmeTtiIUU6dpB9Uwe"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"amount\": 2500,\n    \"currency\": \"CRC\",\n    \"max_tries\": 5,\n    \"description\": \"Pruebas\",\n    \"methods\": [\n        \"Cybersource\"\n    ],\n    \"expiration_date\": \"2026-05-05T22:49:25.204Z\",\n    \"collector_display_name\": \"El Rincón Dev\",\n    \"collector_photo\": \"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTIeWOb723GnYTwdMZ4OAzmHzAmAKkadPzsGA&s\",\n    \"configurations\": [\n        {\n            \"method\": \"Cybersource\",\n            \"configuration\": {\n                \"terminal_id\": \"02a0191b-1fc1-4e9b-a619-f9597a726c10\",\n                \"transacting_mid\": \"testlafise_ijsud\"\n            }\n        }\n    ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "https://poket-api-qa.lafise.com/api/v1/paylinks",
+                  "protocol": "https",
+                  "host": [
+                    "poket-api-qa",
+                    "lafise",
+                    "com"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "paylinks"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": ":status",
+                  "value": 200
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "content-length",
+                  "value": "461"
+                },
+                {
+                  "key": "date",
+                  "value": "Mon, 02 Mar 2026 16:06:11 GMT"
+                },
+                {
+                  "key": "x-amzn-remapped-date",
+                  "value": "Mon, 02 Mar 2026 16:06:11 GMT"
+                },
+                {
+                  "key": "x-amzn-requestid",
+                  "value": "09808851-0615-4c59-a2bd-a9aeb672c35d"
+                },
+                {
+                  "key": "api-supported-versions",
+                  "value": "1.0"
+                },
+                {
+                  "key": "x-amzn-remapped-connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "x-amz-apigw-id",
+                  "value": "ZmlKHGzoIAMFnBA="
+                },
+                {
+                  "key": "x-amzn-remapped-server",
+                  "value": "Kestrel"
+                },
+                {
+                  "key": "x-amzn-trace-id",
+                  "value": "Root=1-69a5b573-672090c2528371e322c780c9"
+                },
+                {
+                  "key": "x-cache",
+                  "value": "Miss from cloudfront"
+                },
+                {
+                  "key": "via",
+                  "value": "1.1 223f95455b0bb3057583bfe63e0d5c7a.cloudfront.net (CloudFront)"
+                },
+                {
+                  "key": "x-amz-cf-pop",
+                  "value": "DFW57-P1"
+                },
+                {
+                  "key": "x-amz-cf-id",
+                  "value": "_tVCNYjUNOC3v3JqQBw2tvDzDg9KFDfRnoqnNCpveNPlev9YuAOCKw=="
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"id\": \"a85893de-5f5c-4802-9f4d-3c1d921d98a2\",\n    \"name\": \"IJSUDWeb\",\n    \"description_consumer\": \"IJSUDWeb\",\n    \"amount\": 2500,\n    \"max_tries\": 5,\n    \"currency\": \"CRC\",\n    \"description\": \"Pruebas\",\n    \"status\": \"Created\",\n    \"methods\": [\n        \"Cybersource\"\n    ],\n    \"expiration_date\": \"2026-05-05T22:49:25.204Z\",\n    \"configurations\": [\n        {\n            \"method\": \"Cybersource\",\n            \"configuration\": {\n                \"terminal_id\": \"02a0191b-1fc1-4e9b-a619-f9597a726c10\"\n            }\n        }\n    ],\n    \"pay_link_url\": \"https://qa.pagoconpoket.com/payment/a85893de-5f5c-4802-9f4d-3c1d921d98a2\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Actualizar",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_bearer}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{token_bearer}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-api-key",
+                "value": "xxxxxxx"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"configurations\": [\n    {\n      \"method\": \"Cybersource\",\n      \"configuration\": {\n        \"terminal_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n        \"transacting_mid\": \"testlafise_ijsud\"\n      }\n    }\n  ],\n  \"expiration_date\": \"2026-05-06T15:53:49.679Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "https://poket-api-qa.lafise.com/api/v1/paylinks/:IdPaylink",
+              "protocol": "https",
+              "host": [
+                "poket-api-qa",
+                "lafise",
+                "com"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "paylinks",
+                ":IdPaylink"
+              ],
+              "variable": [
+                {
+                  "key": "IdPaylink",
+                  "value": "a85893de-5f5c-4802-9f4d-3c1d921d98a2"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Actualizar",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "content-type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "x-api-key",
+                    "value": "o5R61cdckaanPMS2C4DtX45pmeTtiIUU6dpB9Uwe"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"configurations\": [\n    {\n      \"method\": \"Cybersource\",\n      \"configuration\": {\n        \"terminal_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n        \"transacting_mid\": \"testlafise_ijsud\"\n      }\n    }\n  ],\n  \"expiration_date\": \"2026-05-06T15:53:49.679Z\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "https://poket-api-qa.lafise.com/api/v1/paylinks/:IdPaylink",
+                  "protocol": "https",
+                  "host": [
+                    "poket-api-qa",
+                    "lafise",
+                    "com"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "paylinks",
+                    ":IdPaylink"
+                  ],
+                  "variable": [
+                    {
+                      "key": "IdPaylink",
+                      "value": "a85893de-5f5c-4802-9f4d-3c1d921d98a2"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": ":status",
+                  "value": 200
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "content-length",
+                  "value": "161"
+                },
+                {
+                  "key": "date",
+                  "value": "Mon, 02 Mar 2026 16:17:39 GMT"
+                },
+                {
+                  "key": "x-amzn-remapped-date",
+                  "value": "Mon, 02 Mar 2026 16:17:39 GMT"
+                },
+                {
+                  "key": "x-amzn-requestid",
+                  "value": "c9bb9025-c9d2-44a6-bea9-8e477e027674"
+                },
+                {
+                  "key": "api-supported-versions",
+                  "value": "1.0"
+                },
+                {
+                  "key": "x-amzn-remapped-connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "x-amz-apigw-id",
+                  "value": "Zmm1ZGJdIAMFk_g="
+                },
+                {
+                  "key": "x-amzn-remapped-server",
+                  "value": "Kestrel"
+                },
+                {
+                  "key": "x-amzn-trace-id",
+                  "value": "Root=1-69a5b822-3084a3c90c3f39f17fda4dd4"
+                },
+                {
+                  "key": "x-cache",
+                  "value": "Miss from cloudfront"
+                },
+                {
+                  "key": "via",
+                  "value": "1.1 8139bc666c011a53bdc5037ba6d5931e.cloudfront.net (CloudFront)"
+                },
+                {
+                  "key": "x-amz-cf-pop",
+                  "value": "DFW57-P1"
+                },
+                {
+                  "key": "x-amz-cf-id",
+                  "value": "5ow3070Ux9UyJozYl7JIxXMFQINJn7WJHCMz7ZZVwKTmgS9_mOqLVw=="
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"expiration_date\": \"2026-05-06T15:53:49.679Z\",\n    \"configurations\": [\n        {\n            \"method\": \"Cybersource\",\n            \"configuration\": {\n                \"terminal_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"\n            }\n        }\n    ]\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "token_bearer",
+      "value": ""
+    }
+  ]
+}
+
+Updated 3 months ago
+
+Delete Pay Link
+Datos de Pruebas
+Did this page help you?
+
+
+
+Datos de Pruebas
+Para validar la integración de los flujos de pago en el ambiente de pruebas (QA Clean), utiliza las siguientes tarjetas de crédito/débito simuladas. Estos datos permiten probar diferentes respuestas del procesador sin realizar cargos reales.
+
+Tarjetas de Crédito para Pruebas
+Escenario
+
+Número de Tarjeta
+
+Monto
+
+Vencimiento (MM/AA)
+
+CVV
+
+Transacción
+Exitosa
+
+4111 1111 1111 1111
+
+1000.00
+
+12/30
+
+123
+
+Fondos
+Insuficientes
+
+4111 1111 1111 1111
+
+4051.00
+
+12/30
+
+123
+
+Tarjeta
+Expirada
+
+4111 1111 1111 1111
+
+4054.00
+
+12/30
+
+123
+
+Tarjeta Robada/Extraviada
+
+4111 1111 1111 1111
+
+4004.00
+
+12/30
+
+123
+
+Límite de
+Crédito Excedido
+
+4111 1111 1111 1111
+
+4061.00
+
+12/30
+
+123
+
+CVV Inválido
+
+4111 1111 1111 1111
+
+0.00
+
+12/30
+
+002
+
+
+Updated 3 months ago
+
+Exportaciones disponibles
+Did this page help you?

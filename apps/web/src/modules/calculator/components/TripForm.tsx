@@ -28,7 +28,11 @@ export function TripForm({ form, onChange }: TripFormProps) {
   }, [tracker.lastResult, onChange]);
 
   const handleStop = () => {
-    tracker.stop();
+    const distance = tracker.stop();
+    if (typeof distance === 'number' && distance > 0) {
+      appliedRef.current = distance;
+      onChange({ kmWithPassenger: distance });
+    }
   };
 
   return (

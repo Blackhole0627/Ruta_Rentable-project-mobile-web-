@@ -19,6 +19,8 @@ import { Label } from '@/shared/components/ui/label';
 import { DatePicker } from '@/shared/components/ui/datepicker';
 import { Select } from '@/shared/components/ui/select';
 import { Dialog } from '@/shared/components/ui/dialog';
+import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog';
+import { errMessage } from '@/shared/utils/errorMessage';
 import { downloadCsv } from '@/shared/utils/export';
 import { formatPercent } from '@/shared/utils/formatters';
 import { useI18n } from '@/core/i18n/i18n';
@@ -76,6 +78,7 @@ export function HistoryPage() {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [editing, setEditing] = useState<Trip | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Trip | null>(null);
 
   useEffect(() => {
     loadTrips();
@@ -267,10 +270,7 @@ export function HistoryPage() {
                 <button
                   type="button"
                   className="flex items-center gap-1 text-xs font-medium text-danger-500"
-                  onClick={async () => {
-                    await deleteTrip(trip.id);
-                    toast.success(t('Viaje eliminado'));
-                  }}
+                  onClick={() => setPendingDelete(trip)}
                 >
                   <AppIcons.trash size={14} /> {t('Eliminar')}
                 </button>
@@ -293,6 +293,25 @@ export function HistoryPage() {
           await saveTrip(updated);
           setEditing(null);
           toast.success(t('Viaje actualizado'));
+        }}
+      />
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title={t('Eliminar viaje')}
+        message={t('¿Seguro que quieres eliminar este viaje? Esta acción no se puede deshacer.')}
+        confirmLabel={t('Eliminar')}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={async () => {
+          if (!pendingDelete) return;
+          try {
+            await deleteTrip(pendingDelete.id);
+            toast.success(t('Viaje eliminado'));
+          } catch (err) {
+            toast.error(errMessage(err, t('No se pudo eliminar el viaje')));
+          } finally {
+            setPendingDelete(null);
+          }
         }}
       />
     </div>

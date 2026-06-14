@@ -15,6 +15,7 @@ import { formatDate } from '@/shared/utils/formatters';
 import { cn } from '@/shared/utils/cn';
 import { useI18n } from '@/core/i18n/i18n';
 import { toast } from '@/core/store/useToastStore';
+import { errMessage } from '@/shared/utils/errorMessage';
 
 const backend = getBackend();
 
@@ -66,17 +67,25 @@ export function AdminUsers() {
   }, [users, query, statusFilter]);
 
   const handleStatusChange = async (userId: string, status: SubscriptionStatus) => {
-    await backend.adminUpdateUserStatus(userId, status);
-    await reload();
-    setSelected((s) => (s && s.id === userId ? { ...s, status } : s));
-    toast.success(t('Estado actualizado'));
+    try {
+      await backend.adminUpdateUserStatus(userId, status);
+      await reload();
+      setSelected((s) => (s && s.id === userId ? { ...s, status } : s));
+      toast.success(t('Estado actualizado'));
+    } catch (err) {
+      toast.error(errMessage(err, t('No se pudo actualizar el estado.')));
+    }
   };
 
   const handleMakeAdmin = async (userId: string) => {
-    await backend.adminSetUserRole(userId, 'admin');
-    await reload(); // promoted user leaves the driver list
-    setSelected(null);
-    toast.success(t('Usuario hecho administrador'));
+    try {
+      await backend.adminSetUserRole(userId, 'admin');
+      await reload(); // promoted user leaves the driver list
+      setSelected(null);
+      toast.success(t('Usuario hecho administrador'));
+    } catch (err) {
+      toast.error(errMessage(err, t('No se pudo cambiar el rol del usuario.')));
+    }
   };
 
   if (!users) return <LoadingSkeleton variant="table" />;

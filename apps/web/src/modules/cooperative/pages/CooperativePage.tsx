@@ -9,6 +9,8 @@ import { Label } from '@/shared/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
 import { LoadingSkeleton } from '@/shared/components/LoadingSkeleton';
+import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog';
+import { errMessage } from '@/shared/utils/errorMessage';
 import { formatCurrency } from '@/shared/utils/currency';
 import { formatPercent } from '@/shared/utils/formatters';
 import { AppIcons, iconPropsLg } from '@/shared/constants/icons';
@@ -42,6 +44,9 @@ export function CooperativePage() {
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
   const [leaveConfirm, setLeaveConfirm] = useState(false);
+  const [pendingRemove, setPendingRemove] = useState<{ memberId: string; name: string } | null>(
+    null,
+  );
 
   useEffect(() => {
     if (status === 'authenticated') load();
@@ -339,10 +344,7 @@ export function CooperativePage() {
                   type="button"
                   aria-label={t('Eliminar')}
                   className="shrink-0 text-road-400 hover:text-danger-500"
-                  onClick={async () => {
-                    await removeMember(d.memberId);
-                    toast.success(t('Conductor eliminado'));
-                  }}
+                  onClick={() => setPendingRemove({ memberId: d.memberId, name: d.name })}
                 >
                   <AppIcons.trash size={16} />
                 </button>
@@ -433,6 +435,27 @@ export function CooperativePage() {
           </Card>
         </>
       )}
+
+      <ConfirmDialog
+        open={!!pendingRemove}
+        title={t('Eliminar conductor')}
+        message={t('¿Quitar a {name} de la cooperativa? Dejará de compartir sus reportes contigo.', {
+          name: pendingRemove?.name ?? '',
+        })}
+        confirmLabel={t('Eliminar')}
+        onCancel={() => setPendingRemove(null)}
+        onConfirm={async () => {
+          if (!pendingRemove) return;
+          try {
+            await removeMember(pendingRemove.memberId);
+            toast.success(t('Conductor eliminado'));
+          } catch (err) {
+            toast.error(errMessage(err, t('No se pudo eliminar al conductor.')));
+          } finally {
+            setPendingRemove(null);
+          }
+        }}
+      />
     </div>
   );
 }
@@ -446,11 +469,12 @@ function CoopParamsCard({
   currency: 'NIO' | 'USD';
   initialFuel?: number;
   initialMargin?: number;
-  onSave: (p: { gasolinePerLiter?: number; desiredMargin?: number }) => void;
+  onSave: (p: { gasolinePerLiter?: number; desiredMargin?: number }) => void | Promise<void>;
 }) {
   const [fuel, setFuel] = useState(initialFuel ?? 45);
   const [margin, setMargin] = useState((initialMargin ?? 0.3) * 100);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
   const { t } = useI18n();
   void currency;
 
@@ -486,12 +510,20 @@ function CoopParamsCard({
         </div>
         <div className="flex items-center gap-3">
           <Button
-            onClick={() => {
-              onSave({ gasolinePerLiter: fuel, desiredMargin: margin / 100 });
-              setSaved(true);
+            disabled={saving}
+            onClick={async () => {
+              setSaving(true);
+              try {
+                await onSave({ gasolinePerLiter: fuel, desiredMargin: margin / 100 });
+                setSaved(true);
+              } catch (err) {
+                toast.error(errMessage(err, t('No se pudieron guardar los parámetros.')));
+              } finally {
+                setSaving(false);
+              }
             }}
           >
-            {t('Guardar')}
+            {saving ? t('Guardando…') : t('Guardar')}
           </Button>
           {saved && (
             <span className="flex items-center gap-1 text-sm text-brand-600">

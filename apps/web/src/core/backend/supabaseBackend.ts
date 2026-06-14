@@ -460,7 +460,27 @@ export class SupabaseBackend implements BackendAdapter {
       status: r.status,
       receiptUrl: r.receipt_url ?? undefined,
       paidAt: r.paid_at,
+      provider: r.provider ?? undefined,
+      externalLinkId: r.external_link_id ?? undefined,
+      externalPaymentId: r.external_payment_id ?? undefined,
+      providerStatus: r.provider_status ?? undefined,
+      checkoutUrl: r.checkout_url ?? undefined,
     }));
+  }
+
+  /**
+   * Start a Poket card payment via the `poket-create-link` Edge Function (the
+   * Poket API needs OAuth secrets + a whitelisted IP, so it can't run in the
+   * browser). Returns the hosted checkout URL.
+   */
+  async createPoketLink(planId: string): Promise<{ checkoutUrl: string }> {
+    const { data, error } = await this.client.functions.invoke('poket-create-link', {
+      body: { planId },
+    });
+    if (error) throw error;
+    const checkoutUrl = (data as { checkoutUrl?: string } | null)?.checkoutUrl;
+    if (!checkoutUrl) throw new Error('No checkout URL returned');
+    return { checkoutUrl };
   }
 
   async recordPayment(payment: Payment): Promise<Payment> {
@@ -478,6 +498,11 @@ export class SupabaseBackend implements BackendAdapter {
       status: payment.status,
       receipt_url: payment.receiptUrl,
       paid_at: payment.paidAt,
+      provider: payment.provider,
+      external_link_id: payment.externalLinkId,
+      external_payment_id: payment.externalPaymentId,
+      provider_status: payment.providerStatus,
+      checkout_url: payment.checkoutUrl,
     });
     if (error) throw error;
     return { ...payment, userId: uid };

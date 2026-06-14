@@ -13,6 +13,7 @@ import { formatCurrency } from '@/shared/utils/currency';
 import { AppIcons } from '@/shared/constants/icons';
 import { useI18n } from '@/core/i18n/i18n';
 import { toast } from '@/core/store/useToastStore';
+import { errMessage } from '@/shared/utils/errorMessage';
 import { ALL_CAPABILITIES, type Capability } from '@/core/subscription/planAccess';
 
 const backend = getBackend();
@@ -102,7 +103,7 @@ export function AdminPlans() {
             setEditing(null);
             toast.success(t('Plan guardado'));
           } catch (err) {
-            toast.error(err instanceof Error ? err.message : t('No se pudo guardar el plan'));
+            toast.error(errMessage(err, t('No se pudo guardar el plan')));
           }
         }}
       />
@@ -160,9 +161,13 @@ function PlanEditor({
             <Label>{t('Límite de cálculos (vacío = ilimitado)')}</Label>
             <Input
               type="number"
+              min={0}
               value={draft.calcLimit ?? ''}
               onChange={(e) =>
-                update({ calcLimit: e.target.value === '' ? null : Number(e.target.value) })
+                update({
+                  calcLimit:
+                    e.target.value === '' ? null : Math.max(0, Number(e.target.value)),
+                })
               }
             />
           </div>
@@ -218,9 +223,11 @@ function PlanEditor({
         </div>
         <Button
           className="w-full"
+          disabled={!draft.name.trim()}
           onClick={() =>
             onSave({
               ...draft,
+              name: draft.name.trim(),
               features: featuresText
                 .split('\n')
                 .map((s) => s.trim())

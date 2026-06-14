@@ -10,6 +10,7 @@ import { PLATFORMS, PLATFORM_LABELS } from '@/core/constants/platforms';
 import { AppIcons } from '@/shared/constants/icons';
 import { useI18n } from '@/core/i18n/i18n';
 import { toast } from '@/core/store/useToastStore';
+import { errMessage } from '@/shared/utils/errorMessage';
 import type { Platform } from '@shared/types/trip.types';
 
 const backend = getBackend();
@@ -37,6 +38,8 @@ export function AdminParameters() {
       await backend.adminUpdateParameters(params);
       setSaved(true);
       toast.success(t('Parámetros guardados. Los conductores los verán al actualizar.'));
+    } catch (err) {
+      toast.error(errMessage(err, t('No se pudieron guardar los parámetros.')));
     } finally {
       setSaving(false);
     }

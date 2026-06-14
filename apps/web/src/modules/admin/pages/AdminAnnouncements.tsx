@@ -13,6 +13,7 @@ import { formatDate } from '@/shared/utils/formatters';
 import { AppIcons } from '@/shared/constants/icons';
 import { useI18n } from '@/core/i18n/i18n';
 import { toast } from '@/core/store/useToastStore';
+import { errMessage } from '@/shared/utils/errorMessage';
 
 const backend = getBackend();
 
@@ -66,6 +67,8 @@ export function AdminAnnouncements() {
       setSchedule('');
       await reload();
       toast.success(schedule ? t('Anuncio programado') : t('Anuncio enviado'));
+    } catch (err) {
+      toast.error(errMessage(err, t('No se pudo enviar el anuncio.')));
     } finally {
       setSending(false);
     }

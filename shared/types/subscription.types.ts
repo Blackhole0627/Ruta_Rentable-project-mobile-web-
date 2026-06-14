@@ -35,7 +35,7 @@ export interface Subscription {
   endDate?: string; // ISO date
 }
 
-export type PaymentMethod = 'transfer' | 'wallet' | 'cash' | 'other';
+export type PaymentMethod = 'transfer' | 'wallet' | 'cash' | 'poket' | 'other';
 
 export interface Payment {
   id: string;
@@ -49,6 +49,19 @@ export interface Payment {
   status: 'confirmed' | 'pending' | 'rejected';
   receiptUrl?: string;
   paidAt: string; // ISO datetime
+
+  // ---- Automatic gateway (LAFISE Poket) fields ----
+  /** Gateway that owns this payment, e.g. 'poket'. Absent for manual transfers. */
+  provider?: string;
+  /** Poket PayLink id (its `id` / webhook `external_link_id`). The webhook
+   * correlates a payment event back to this row through it. */
+  externalLinkId?: string;
+  /** Poket attempt id (`try_id`) recorded once a payment attempt finishes. */
+  externalPaymentId?: string;
+  /** Raw provider status (e.g. 'Created' | 'Authorized' | 'Failed'). */
+  providerStatus?: string;
+  /** Hosted Poket checkout URL the driver is redirected to. */
+  checkoutUrl?: string;
 }
 
 /** A payment submission as seen by the admin review queue. */

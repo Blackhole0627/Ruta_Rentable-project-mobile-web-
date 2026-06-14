@@ -90,6 +90,12 @@ export interface BackendAdapter {
   getSubscription(userId: string): Promise<Subscription | null>;
   listPayments(userId: string): Promise<Payment[]>;
   recordPayment(payment: Payment): Promise<Payment>;
+  /**
+   * Start an automatic LAFISE Poket card payment for a plan. Runs server-side
+   * (Edge Function) and returns the hosted checkout URL to redirect the driver
+   * to. The subscription is activated later by the Poket webhook.
+   */
+  createPoketLink(planId: string): Promise<{ checkoutUrl: string }>;
 
   // ---- Admin ----
   adminListUsers(): Promise<AdminUserRow[]>;

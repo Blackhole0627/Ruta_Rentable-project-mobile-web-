@@ -25,6 +25,13 @@ interface SubscriptionState {
   isLoading: boolean;
   load: () => Promise<void>;
   subscribe: (planId: string, method: PaymentMethod) => Promise<void>;
+  /**
+   * Start an automatic Poket card payment. Redirects the browser to the hosted
+   * checkout and resolves `{ redirected: true }`. On the mock backend the
+   * payment is simulated instantly (no redirect) and it resolves
+   * `{ redirected: false }` after refreshing local state.
+   */
+  startPoketCheckout: (planId: string) => Promise<{ redirected: boolean }>;
   /** Submit a bank-transfer receipt for admin review (status: pending). */
   submitReceipt: (planId: string, receiptUrl: string) => Promise<void>;
   /** Cancel the current plan so a different one can be chosen. */
@@ -129,6 +136,21 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
       backend.listPayments(user.id),
     ]);
     set({ subscription, payments });
+  },
+  startPoketCheckout: async (planId) => {
+    const user = useUserStore.getState().user;
+    if (!user) return { redirected: false };
+    const { checkoutUrl } = await backend.createPoketLink(planId);
+    if (checkoutUrl) {
+      // Real gateway: hand the driver off to Poket's hosted checkout. The
+      // subscription is activated later by the webhook; on return the page
+      // reloads and reflects the new status.
+      window.location.href = checkoutUrl;
+      return { redirected: true };
+    }
+    // Mock backend simulated an instant success — just refresh local state.
+    await get().load();
+    return { redirected: false };
   },
   submitReceipt: async (planId, receiptUrl) => {
     const user = useUserStore.getState().user;

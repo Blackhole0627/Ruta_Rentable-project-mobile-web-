@@ -339,6 +339,38 @@ export class MockBackend implements BackendAdapter {
     return payment;
   }
 
+  /**
+   * Mock Poket: there's no real gateway, so simulate an instant successful
+   * card payment — record a confirmed payment and activate the plan, exactly
+   * like the webhook would server-side. Returns an empty checkoutUrl, which
+   * the store reads as "already done, don't redirect".
+   */
+  async createPoketLink(planId: string): Promise<{ checkoutUrl: string }> {
+    await this.ready();
+    const userId = this.session?.user.id;
+    if (!userId) throw new Error('Not authenticated');
+    const plan = await cloudDb.plans.get(planId);
+    const payment: Payment = {
+      id: crypto.randomUUID(),
+      userId,
+      planId,
+      amount: plan?.priceNio ?? 0,
+      currency: 'NIO',
+      method: 'poket',
+      status: 'confirmed',
+      provider: 'poket',
+      externalLinkId: crypto.randomUUID(),
+      providerStatus: 'Authorized',
+      paidAt: new Date().toISOString(),
+    };
+    await this.recordPayment(payment); // flips subscription_status to 'active'
+    await cloudDb.users.update(userId, {
+      currentPlan: planId,
+      freeCalculationsUsed: 0,
+    });
+    return { checkoutUrl: '' };
+  }
+
   async adminListUsers(): Promise<AdminUserRow[]> {
     await this.ready();
     const users = await cloudDb.users.toArray();

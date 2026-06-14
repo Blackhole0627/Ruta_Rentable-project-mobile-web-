@@ -16,11 +16,13 @@ import type { UnitType, UserVehicle } from '@shared/types/vehicle.types';
 import type { SettingsRecord } from '@/core/db/schema';
 import { LoadingSkeleton } from '@/shared/components/LoadingSkeleton';
 import { SearchableSelect } from '@/shared/components/ui/searchable-select';
+import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog';
 import { AppIcons, iconPropsSm } from '@/shared/constants/icons';
 import { cn } from '@/shared/utils/cn';
 import { CostBreakdownChart } from '../components/CostBreakdownChart';
 import { useI18n } from '@/core/i18n/i18n';
 import { toast } from '@/core/store/useToastStore';
+import { errMessage } from '@/shared/utils/errorMessage';
 import { hasCapability } from '@/core/subscription/planAccess';
 
 /** Numeric field with a driver-friendly hint (FR-VEH-03 tooltips). */
@@ -60,6 +62,7 @@ export function VehiclePage() {
   const { user } = useUserStore();
   const { t } = useI18n();
   const [override, setOverride] = useState<EditTarget | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<UserVehicle | null>(null);
   const canAddMore = hasCapability(user, 'multiVehicle');
 
   useEffect(() => {
@@ -130,11 +133,7 @@ export function VehiclePage() {
                   type="button"
                   aria-label={t('Eliminar')}
                   className="flex h-9 w-9 items-center justify-center rounded-lg text-danger-500 transition-colors hover:bg-red-50"
-                  onClick={async () => {
-                    await deleteVehicle(v.id);
-                    setOverride(null);
-                    toast.success(t('Vehículo eliminado'));
-                  }}
+                  onClick={() => setPendingDelete(v)}
                 >
                   <AppIcons.trash size={18} />
                 </button>
@@ -172,6 +171,28 @@ export function VehiclePage() {
           await saveVehicle(v);
           setOverride({ mode: 'edit', id: v.id });
           toast.success(t('Vehículo guardado'));
+        }}
+      />
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title={t('Eliminar vehículo')}
+        message={t('¿Seguro que quieres eliminar "{name}"? Esta acción no se puede deshacer.', {
+          name: pendingDelete ? `${pendingDelete.make} ${pendingDelete.model}`.trim() : '',
+        })}
+        confirmLabel={t('Eliminar')}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={async () => {
+          if (!pendingDelete) return;
+          try {
+            await deleteVehicle(pendingDelete.id);
+            setOverride(null);
+            toast.success(t('Vehículo eliminado'));
+          } catch (err) {
+            toast.error(errMessage(err, t('No se pudo eliminar el vehículo')));
+          } finally {
+            setPendingDelete(null);
+          }
         }}
       />
     </div>
@@ -222,12 +243,16 @@ function VehicleEditor({
   };
 
   const handleSave = () => {
+    if (!form.make?.trim() || !form.model?.trim()) {
+      toast.error(t('Elige la marca y el modelo del catálogo antes de guardar.'));
+      return;
+    }
     const now = new Date();
     const v: UserVehicle = {
       id: seed?.id ?? crypto.randomUUID(),
       unitType,
-      make: form.make ?? '',
-      model: form.model ?? '',
+      make: form.make.trim(),
+      model: form.model.trim(),
       catalogId: catalogId || undefined,
       realKmPerLiter: Number(form.realKmPerLiter) || defaults.estKmPerLiter,
       fuelPricePerUnit: Number(form.fuelPricePerUnit) || settings?.gasolinePerLiter || 45,

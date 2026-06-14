@@ -3,6 +3,7 @@ import { getBackend } from '@/core/backend';
 import type { CatalogVehicle, UnitType, FuelType } from '@shared/types/vehicle.types';
 import { DataTable, type Column } from '../components/DataTable';
 import { Dialog } from '@/shared/components/ui/dialog';
+import { ConfirmDialog } from '@/shared/components/ui/confirm-dialog';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
 import { Select } from '@/shared/components/ui/select';
@@ -10,6 +11,8 @@ import { Button } from '@/shared/components/ui/button';
 import { LoadingSkeleton } from '@/shared/components/LoadingSkeleton';
 import { AppIcons } from '@/shared/constants/icons';
 import { useI18n } from '@/core/i18n/i18n';
+import { toast } from '@/core/store/useToastStore';
+import { errMessage } from '@/shared/utils/errorMessage';
 
 const backend = getBackend();
 
@@ -25,6 +28,7 @@ export function AdminCatalog() {
   const [query, setQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<UnitType | 'all'>('all');
   const [editing, setEditing] = useState<CatalogVehicle | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<CatalogVehicle | null>(null);
 
   const reload = () => backend.adminListCatalog().then(setItems);
   useEffect(() => {
@@ -86,10 +90,9 @@ export function AdminCatalog() {
             type="button"
             aria-label={t('Eliminar')}
             className="text-danger-500 hover:text-red-700"
-            onClick={async (e) => {
+            onClick={(e) => {
               e.stopPropagation();
-              await backend.adminDeleteCatalog(v.id);
-              await reload();
+              setPendingDelete(v);
             }}
           >
             <AppIcons.trash size={16} />
@@ -137,9 +140,35 @@ export function AdminCatalog() {
         entry={editing}
         onClose={() => setEditing(null)}
         onSave={async (v) => {
-          await backend.adminUpsertCatalog(v);
-          await reload();
-          setEditing(null);
+          try {
+            await backend.adminUpsertCatalog(v);
+            await reload();
+            setEditing(null);
+          } catch (err) {
+            toast.error(errMessage(err, t('No se pudo guardar el vehículo')));
+          }
+        }}
+      />
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title={t('Eliminar del catálogo')}
+        message={t('¿Eliminar "{name}" del catálogo?', {
+          name: pendingDelete ? `${pendingDelete.make} ${pendingDelete.model}`.trim() : '',
+        })}
+        confirmLabel={t('Eliminar')}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={async () => {
+          if (!pendingDelete) return;
+          try {
+            await backend.adminDeleteCatalog(pendingDelete.id);
+            await reload();
+            toast.success(t('Vehículo eliminado del catálogo'));
+          } catch (err) {
+            toast.error(errMessage(err, t('No se pudo eliminar el vehículo')));
+          } finally {
+            setPendingDelete(null);
+          }
         }}
       />
     </div>
@@ -203,7 +232,11 @@ function CatalogEditor({
             onChange={(e) => update({ estKmPerLiter: Number(e.target.value) })}
           />
         </div>
-        <Button className="w-full" onClick={() => onSave(draft)} disabled={!draft.make || !draft.model}>
+        <Button
+          className="w-full"
+          onClick={() => onSave(draft)}
+          disabled={!draft.make.trim() || !draft.model.trim() || !(draft.estKmPerLiter > 0)}
+        >
           {t('Guardar')}
         </Button>
       </div>

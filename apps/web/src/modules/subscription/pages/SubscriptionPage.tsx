@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent } from '@/shared/components/ui/card';
@@ -10,25 +10,21 @@ import { useUserStore } from '@/core/store/useUserStore';
 import { useAuthStore } from '@/core/store/useAuthStore';
 import { formatCurrency } from '@/shared/utils/currency';
 import { formatDate } from '@/shared/utils/formatters';
-import { fileToCompressedDataUrl } from '@/shared/utils/image';
 import { AppIcons, iconPropsSm } from '@/shared/constants/icons';
 import { cn } from '@/shared/utils/cn';
 import { useI18n } from '@/core/i18n/i18n';
 import { toast } from '@/core/store/useToastStore';
-import { BANK_DETAILS } from '../bankDetails';
 
 export function SubscriptionPage() {
   const navigate = useNavigate();
   const { status } = useAuthStore();
   const { user } = useUserStore();
-  const { plans, payments, isLoading, load, submitReceipt, unsubscribe } = useSubscriptionStore();
+  const { plans, payments, isLoading, load, startPoketCheckout, unsubscribe } =
+    useSubscriptionStore();
   const { t } = useI18n();
   const [selected, setSelected] = useState<string | null>(null);
-  const [receipt, setReceipt] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [confirmUnsub, setConfirmUnsub] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     load();
@@ -56,8 +52,6 @@ export function SubscriptionPage() {
   const currency = user?.currency ?? 'NIO';
   const selectedPlan = plans.find((p) => p.id === selected);
   const latest = payments[0];
-  // One plan at a time: block new subscriptions while one is pending review or active.
-  const isPending = latest?.status === 'pending';
   const hasActivePaid = user?.subscriptionStatus === 'active' && currentPlan !== 'free';
 
   const handleUnsubscribe = async () => {
@@ -81,9 +75,9 @@ export function SubscriptionPage() {
   if (user?.subscriptionStatus === 'active') {
     banner = { variant: 'active', text: t('Suscripción activa') };
   } else if (latest?.status === 'pending') {
-    banner = { variant: 'pending', text: t('Comprobante en revisión') };
+    banner = { variant: 'pending', text: t('Pago en proceso') };
   } else if (latest?.status === 'rejected') {
-    banner = { variant: 'rejected', text: t('Comprobante rechazado. Intenta de nuevo.') };
+    banner = { variant: 'rejected', text: t('Pago rechazado. Intenta de nuevo.') };
   } else if (user?.subscriptionStatus === 'overdue') {
     banner = { variant: 'overdue', text: t('Pago vencido') };
   }
@@ -95,39 +89,21 @@ export function SubscriptionPage() {
     overdue: 'bg-red-50 text-danger-600 border-danger-500/40',
   };
 
-  const copyIban = async () => {
+  const closeDialog = () => setSelected(null);
+
+  const handlePay = async () => {
+    if (!selected) return;
+    setWorking(true);
     try {
-      await navigator.clipboard.writeText(BANK_DETAILS.iban);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      const { redirected } = await startPoketCheckout(selected);
+      if (!redirected) {
+        // Mock backend (no real gateway): payment simulated instantly.
+        closeDialog();
+        toast.success(t('Pago procesado. Tu suscripción está activa.'));
+      }
+      // When redirected === true the browser is already navigating to Poket.
     } catch {
-      /* ignore */
-    }
-  };
-
-  const handleFile = async (file: File | undefined) => {
-    if (!file) return;
-    setWorking(true);
-    try {
-      setReceipt(await fileToCompressedDataUrl(file));
-    } finally {
-      setWorking(false);
-    }
-  };
-
-  const closeDialog = () => {
-    setSelected(null);
-    setReceipt(null);
-  };
-
-  const handleSubmit = async () => {
-    if (!selected || !receipt) return;
-    setWorking(true);
-    try {
-      await submitReceipt(selected, receipt);
-      closeDialog();
-      toast.success(t('Comprobante enviado. Te avisaremos cuando se apruebe.'));
-    } finally {
+      toast.error(t('No pudimos iniciar el pago. Intenta de nuevo.'));
       setWorking(false);
     }
   };
@@ -195,14 +171,12 @@ export function SubscriptionPage() {
                 ) : !isCurrent && (plan.priceNio ?? 0) > 0 ? (
                   <Button
                     className="mt-2 w-full"
-                    disabled={isPending || hasActivePaid}
+                    disabled={hasActivePaid}
                     onClick={() => setSelected(plan.id)}
                   >
-                    {isPending
-                      ? t('En revisión')
-                      : hasActivePaid
-                        ? t('Cancela tu plan actual primero')
-                        : t('Suscribirme')}
+                    {hasActivePaid
+                      ? t('Cancela tu plan actual primero')
+                      : t('Suscribirme')}
                   </Button>
                 ) : null}
               </CardContent>
@@ -241,7 +215,7 @@ export function SubscriptionPage() {
                       ? t('Confirmado')
                       : p.status === 'rejected'
                         ? t('Rechazado')
-                        : t('En revisión')}
+                        : t('En proceso')}
                   </Badge>
                 </li>
               ))}
@@ -250,7 +224,7 @@ export function SubscriptionPage() {
         </Card>
       )}
 
-      {/* Payment / bank-transfer dialog */}
+      {/* Poket card-payment dialog */}
       <Dialog
         open={!!selected}
         onClose={closeDialog}
@@ -264,87 +238,23 @@ export function SubscriptionPage() {
             <span className="text-sm text-road-500"> {t('/mes')}</span>
           </div>
 
-          {/* Bank details */}
-          <div className="space-y-2 rounded-xl border border-road-200 p-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-road-400">
-              {t('Transfiere a esta cuenta')}
+          <div className="flex items-start gap-2 rounded-xl border border-road-200 p-3 text-sm text-road-600">
+            <AppIcons.billing size={18} className="mt-0.5 shrink-0 text-brand-600" />
+            <p>
+              {t(
+                'Paga de forma segura con tarjeta de crédito o débito. Tu suscripción se activa automáticamente al confirmar el pago.',
+              )}
             </p>
-            <Row label={t('Banco')} value={BANK_DETAILS.bank} />
-            <Row label={t('Titular')} value={BANK_DETAILS.holder} />
-            <Row label={t('Tipo de cuenta')} value={BANK_DETAILS.accountType} />
-            <Row label={t('Moneda')} value={BANK_DETAILS.currency} />
-            <div>
-              <p className="text-xs text-road-500">IBAN</p>
-              <div className="mt-1 flex items-center gap-2">
-                <code className="min-w-0 flex-1 break-all rounded-md bg-road-100 px-2 py-1.5 text-sm font-semibold">
-                  {BANK_DETAILS.iban}
-                </code>
-                <button
-                  type="button"
-                  onClick={copyIban}
-                  className="flex shrink-0 items-center gap-1 rounded-md bg-brand-500 px-3 py-1.5 text-xs font-semibold text-white"
-                >
-                  <AppIcons.copy size={14} /> {copied ? t('Copiado') : t('Copiar')}
-                </button>
-              </div>
-            </div>
           </div>
 
-          {/* Upload comprobante */}
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-road-700">{t('Sube tu comprobante')}</p>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => handleFile(e.target.files?.[0])}
-            />
-            {receipt ? (
-              <div className="space-y-2">
-                <img
-                  src={receipt}
-                  alt={t('Comprobante')}
-                  className="max-h-56 w-full rounded-lg border border-road-200 object-contain"
-                />
-                <button
-                  type="button"
-                  onClick={() => fileRef.current?.click()}
-                  className="text-xs text-brand-600 underline"
-                >
-                  {t('Cambiar imagen')}
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                disabled={working}
-                className="flex w-full flex-col items-center gap-1 rounded-lg border-2 border-dashed border-road-300 py-6 text-road-500 hover:bg-road-50"
-              >
-                <AppIcons.upload size={24} />
-                <span className="text-sm">{t('Toca para subir foto/captura')}</span>
-              </button>
-            )}
-          </div>
-
-          <Button className="w-full" onClick={handleSubmit} disabled={working || !receipt}>
-            {working ? t('Enviando…') : t('Enviar para revisión')}
+          <Button className="w-full" onClick={handlePay} disabled={working}>
+            {working ? t('Redirigiendo…') : t('Pagar con tarjeta')}
           </Button>
           <p className="text-center text-xs text-road-400">
-            {t('El administrador revisará tu pago y activará tu cuenta.')}
+            {t('Procesado por LAFISE Poket. No almacenamos los datos de tu tarjeta.')}
           </p>
         </div>
       </Dialog>
-    </div>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-2 text-sm">
-      <span className="text-road-500">{label}</span>
-      <span className="text-right font-medium text-road-900">{value}</span>
     </div>
   );
 }
