@@ -1,7 +1,7 @@
 -- LAFISE Poket payment integration — schema additions for the `payments` table.
 --
--- The repo doesn't use checked-in migrations; apply this once in the Supabase
--- SQL editor (or `supabase db execute`) for BOTH the QA and production projects.
+-- NOTE: These columns are already included in supabase/migrations/001_full_setup.sql.
+-- Use this file only if you need to patch an OLD Supabase project that predates it.
 -- All statements are idempotent so re-running is safe.
 
 -- Provider that owns the row ('poket' for automatic card payments; NULL for the

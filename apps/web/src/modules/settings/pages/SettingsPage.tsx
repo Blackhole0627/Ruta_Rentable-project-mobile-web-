@@ -15,6 +15,7 @@ import { LoadingSkeleton } from '@/shared/components/LoadingSkeleton';
 import { AppIcons, iconPropsSm } from '@/shared/constants/icons';
 import { useI18n } from '@/core/i18n/i18n';
 import { toast } from '@/core/store/useToastStore';
+import { planDisplayName } from '@/core/subscription/planAccess';
 import type { Currency, FuelUnit } from '@shared/types/user.types';
 
 export function SettingsPage() {
@@ -23,7 +24,7 @@ export function SettingsPage() {
   const { user, setUser } = useUserStore();
   const { status, session } = useAuthStore();
   const { coop, invites, isAdmin, load: loadCoop } = useCooperativeStore();
-  const { plans, load: loadSub } = useSubscriptionStore();
+  const { plans, load: loadSub, isLoading: plansLoading } = useSubscriptionStore();
   const { t, lang, setLang } = useI18n();
   const [confirmClear, setConfirmClear] = useState(false);
 
@@ -78,7 +79,9 @@ export function SettingsPage() {
                 <span className="text-xs">
                   {user?.subscriptionStatus === 'active' && (user?.currentPlan ?? 'free') !== 'free' ? (
                     <span className="rounded-full bg-brand-100 px-2 py-0.5 font-semibold text-brand-800">
-                      {plans.find((p) => p.id === user?.currentPlan)?.name ?? user?.currentPlan}
+                      {plansLoading && !plans.length
+                        ? '…'
+                        : planDisplayName(user?.currentPlan, plans, t)}
                     </span>
                   ) : (
                     <span className="text-road-400">{t('Sin plan')}</span>

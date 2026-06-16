@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { UserVehicle } from '@shared/types/vehicle.types';
 import { db } from '../db/db';
-import { queueDeletion } from '../sync/syncEngine';
+import { queueDeletion, normalizeActiveVehicles } from '../sync/syncEngine';
 
 interface VehicleState {
   vehicles: UserVehicle[];
@@ -24,6 +24,7 @@ export const useVehicleStore = create<VehicleState>((set) => ({
   isLoading: true,
   loadVehicles: async () => {
     set({ isLoading: true });
+    await normalizeActiveVehicles();
     const vehicles = await db.vehicles.toArray();
     set({ vehicles, vehicle: pickActive(vehicles), isLoading: false });
   },

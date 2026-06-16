@@ -30,7 +30,14 @@ export function AdminCatalog() {
   const [editing, setEditing] = useState<CatalogVehicle | null>(null);
   const [pendingDelete, setPendingDelete] = useState<CatalogVehicle | null>(null);
 
-  const reload = () => backend.adminListCatalog().then(setItems);
+  const reload = () =>
+    backend
+      .adminListCatalog()
+      .then(setItems)
+      .catch((err) => {
+        setItems([]);
+        toast.error(errMessage(err, t('No se pudo cargar el catálogo')));
+      });
   useEffect(() => {
     reload();
   }, []);
@@ -144,6 +151,7 @@ export function AdminCatalog() {
             await backend.adminUpsertCatalog(v);
             await reload();
             setEditing(null);
+            toast.success(t('Vehículo guardado en el catálogo'));
           } catch (err) {
             toast.error(errMessage(err, t('No se pudo guardar el vehículo')));
           }

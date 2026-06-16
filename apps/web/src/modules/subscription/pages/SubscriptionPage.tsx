@@ -8,6 +8,10 @@ import { LoadingSkeleton } from '@/shared/components/LoadingSkeleton';
 import { useSubscriptionStore } from '@/core/store/useSubscriptionStore';
 import { useUserStore } from '@/core/store/useUserStore';
 import { useAuthStore } from '@/core/store/useAuthStore';
+import { BankTransferForm } from '../components/BankTransferForm';
+import { KycSection } from '../components/KycSection';
+import { isKycVerified } from '@/core/subscription/planAccess';
+import { KYC_ENABLED } from '@/core/featureFlags';
 import { formatCurrency } from '@/shared/utils/currency';
 import { formatDate } from '@/shared/utils/formatters';
 import { AppIcons, iconPropsSm } from '@/shared/constants/icons';
@@ -15,14 +19,17 @@ import { cn } from '@/shared/utils/cn';
 import { useI18n } from '@/core/i18n/i18n';
 import { toast } from '@/core/store/useToastStore';
 
+type PayMethod = 'card' | 'transfer';
+
 export function SubscriptionPage() {
   const navigate = useNavigate();
   const { status } = useAuthStore();
   const { user } = useUserStore();
-  const { plans, payments, isLoading, load, startPoketCheckout, unsubscribe } =
+  const { plans, payments, isLoading, load, startPoketCheckout, submitReceipt, unsubscribe } =
     useSubscriptionStore();
   const { t } = useI18n();
   const [selected, setSelected] = useState<string | null>(null);
+  const [payMethod, setPayMethod] = useState<PayMethod>('card');
   const [working, setWorking] = useState(false);
   const [confirmUnsub, setConfirmUnsub] = useState(false);
 
@@ -52,7 +59,18 @@ export function SubscriptionPage() {
   const currency = user?.currency ?? 'NIO';
   const selectedPlan = plans.find((p) => p.id === selected);
   const latest = payments[0];
-  const hasActivePaid = user?.subscriptionStatus === 'active' && currentPlan !== 'free';
+  const kycVerified = isKycVerified(user);
+  const kycStatus = user?.kycStatus ?? 'none';
+  const hasActivePaid =
+    user?.subscriptionStatus === 'active' && currentPlan !== 'free' && kycVerified;
+  // KYC is relevant once the driver shows paid intent (a paid current plan, an
+  // in-flight paid payment, or an existing KYC record).
+  const showKyc =
+    KYC_ENABLED &&
+    !!user &&
+    (currentPlan !== 'free' ||
+      kycStatus !== 'none' ||
+      payments.some((p) => (p.planId ?? 'free') !== 'free'));
 
   const handleUnsubscribe = async () => {
     if (!confirmUnsub) {
@@ -69,13 +87,26 @@ export function SubscriptionPage() {
     }
   };
 
-  // Status banner
-  let banner: { variant: 'active' | 'pending' | 'rejected' | 'overdue'; text: string } | null =
-    null;
-  if (user?.subscriptionStatus === 'active') {
+  // Status banner. A paid plan that isn't KYC-verified is gated, so KYC state
+  // takes priority over the "active" message when a paid plan is involved.
+  let banner: {
+    variant: 'active' | 'pending' | 'rejected' | 'overdue' | 'kyc';
+    text: string;
+  } | null = null;
+  if (currentPlan !== 'free' && !kycVerified) {
+    banner = {
+      variant: 'kyc',
+      text:
+        kycStatus === 'submitted'
+          ? t('Pago recibido — verificación de identidad en revisión.')
+          : kycStatus === 'rejected'
+            ? t('Verificación rechazada. Reenvía tus documentos para activar tu plan.')
+            : t('Completa la verificación de identidad para activar tu plan.'),
+    };
+  } else if (user?.subscriptionStatus === 'active') {
     banner = { variant: 'active', text: t('Suscripción activa') };
   } else if (latest?.status === 'pending') {
-    banner = { variant: 'pending', text: t('Pago en proceso') };
+    banner = { variant: 'pending', text: t('Comprobante en revisión') };
   } else if (latest?.status === 'rejected') {
     banner = { variant: 'rejected', text: t('Pago rechazado. Intenta de nuevo.') };
   } else if (user?.subscriptionStatus === 'overdue') {
@@ -87,9 +118,13 @@ export function SubscriptionPage() {
     pending: 'bg-amber-50 text-amber-800 border-amber-300',
     rejected: 'bg-red-50 text-danger-600 border-danger-500/40',
     overdue: 'bg-red-50 text-danger-600 border-danger-500/40',
+    kyc: 'bg-amber-50 text-amber-800 border-amber-300',
   };
 
-  const closeDialog = () => setSelected(null);
+  const closeDialog = () => {
+    setSelected(null);
+    setPayMethod('card');
+  };
 
   const handlePay = async () => {
     if (!selected) return;
@@ -123,6 +158,8 @@ export function SubscriptionPage() {
           {banner.text}
         </div>
       )}
+
+      {showKyc && <KycSection />}
 
       <div className="space-y-3">
         {plans.map((plan) => {
@@ -224,7 +261,7 @@ export function SubscriptionPage() {
         </Card>
       )}
 
-      {/* Poket card-payment dialog */}
+      {/* Payment dialog */}
       <Dialog
         open={!!selected}
         onClose={closeDialog}
@@ -238,21 +275,78 @@ export function SubscriptionPage() {
             <span className="text-sm text-road-500"> {t('/mes')}</span>
           </div>
 
-          <div className="flex items-start gap-2 rounded-xl border border-road-200 p-3 text-sm text-road-600">
-            <AppIcons.billing size={18} className="mt-0.5 shrink-0 text-brand-600" />
-            <p>
-              {t(
-                'Paga de forma segura con tarjeta de crédito o débito. Tu suscripción se activa automáticamente al confirmar el pago.',
+          {!kycVerified && (
+            <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              <AppIcons.shieldCheck size={16} className="mt-0.5 shrink-0" />
+              <p>
+                {t(
+                  'Tras el pago deberás verificar tu identidad (KYC). Tu plan se activa cuando un administrador la apruebe.',
+                )}
+              </p>
+            </div>
+          )}
+
+          <div className="flex rounded-lg border border-road-200 p-0.5 text-sm">
+            <button
+              type="button"
+              className={cn(
+                'flex-1 rounded-md py-2 font-medium transition-colors',
+                payMethod === 'card' ? 'bg-brand-500 text-white' : 'text-road-600',
               )}
-            </p>
+              onClick={() => setPayMethod('card')}
+            >
+              {t('Pagar con tarjeta')}
+            </button>
+            <button
+              type="button"
+              className={cn(
+                'flex-1 rounded-md py-2 font-medium transition-colors',
+                payMethod === 'transfer' ? 'bg-brand-500 text-white' : 'text-road-600',
+              )}
+              onClick={() => setPayMethod('transfer')}
+            >
+              {t('Transferencia bancaria')}
+            </button>
           </div>
 
-          <Button className="w-full" onClick={handlePay} disabled={working}>
-            {working ? t('Redirigiendo…') : t('Pagar con tarjeta')}
-          </Button>
-          <p className="text-center text-xs text-road-400">
-            {t('Procesado por LAFISE Poket. No almacenamos los datos de tu tarjeta.')}
-          </p>
+          {payMethod === 'card' ? (
+            <>
+              <div className="flex items-start gap-2 rounded-xl border border-road-200 p-3 text-sm text-road-600">
+                <AppIcons.billing size={18} className="mt-0.5 shrink-0 text-brand-600" />
+                <p>
+                  {t(
+                    'Paga de forma segura con tarjeta de crédito o débito. Tu suscripción se activa automáticamente al confirmar el pago.',
+                  )}
+                </p>
+              </div>
+              <Button className="w-full" onClick={handlePay} disabled={working}>
+                {working ? t('Redirigiendo…') : t('Pagar con tarjeta')}
+              </Button>
+              <p className="text-center text-xs text-road-400">
+                {t('Procesado por LAFISE Poket. No almacenamos los datos de tu tarjeta.')}
+              </p>
+            </>
+          ) : (
+            <BankTransferForm
+              amount={selectedPlan?.priceNio ?? 0}
+              currency={currency}
+              disabled={working}
+              onSubmit={async (receiptUrl) => {
+                if (!selected) return;
+                setWorking(true);
+                try {
+                  await submitReceipt(selected, receiptUrl);
+                  closeDialog();
+                  await load();
+                  toast.success(t('Comprobante en revisión'));
+                } catch {
+                  toast.error(t('No pudimos enviar el comprobante. Intenta de nuevo.'));
+                } finally {
+                  setWorking(false);
+                }
+              }}
+            />
+          )}
         </div>
       </Dialog>
     </div>

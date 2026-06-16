@@ -80,8 +80,9 @@ El selector vive en `core/backend/` (`getBackend()`):
   `RutaRentableCloudDB`) con conductores, pagos y catálogo de demo. Ideal para
   desarrollo y demo.
 - **Con credenciales reales** en `.env` (`VITE_SUPABASE_URL` /
-  `VITE_SUPABASE_ANON_KEY`): usa `SupabaseBackend`. Aplica las migraciones
-  `supabase/migrations/001`–`004` y despliega las Edge Functions de
+  `VITE_SUPABASE_ANON_KEY`): usa `SupabaseBackend`. En el SQL Editor del
+  proyecto Supabase nuevo, ejecuta **una sola vez**
+  `supabase/migrations/001_full_setup.sql` y despliega las Edge Functions de
   `supabase/functions/`.
 
 Define los correos admin con `VITE_ADMIN_EMAILS` (por defecto

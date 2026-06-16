@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { AppIcons } from '@/shared/constants/icons';
 import { cn } from '@/shared/utils/cn';
 import { useI18n } from '@/core/i18n/i18n';
+import { KYC_ENABLED } from '@/core/featureFlags';
 import type { LucideIcon } from 'lucide-react';
 
 interface NavItem {
@@ -16,6 +17,10 @@ const items: NavItem[] = [
   { to: '/admin/usuarios', label: 'Usuarios', icon: AppIcons.users },
   { to: '/admin/planes', label: 'Planes', icon: AppIcons.billing },
   { to: '/admin/pagos', label: 'Pagos', icon: AppIcons.crown },
+  // KYC review — only when the KYC feature is built in.
+  ...(KYC_ENABLED
+    ? [{ to: '/admin/kyc', label: 'KYC', icon: AppIcons.shieldCheck } as NavItem]
+    : []),
   { to: '/admin/parametros', label: 'Parámetros', icon: AppIcons.settings },
   { to: '/admin/catalogo', label: 'Catálogo', icon: AppIcons.catalog },
   { to: '/admin/anuncios', label: 'Anuncios', icon: AppIcons.announce },

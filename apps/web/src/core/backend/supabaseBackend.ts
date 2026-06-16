@@ -1,4 +1,4 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createClient, type Session, type SupabaseClient } from '@supabase/supabase-js';
 import type { UserProfile } from '@shared/types/user.types';
 import type { UserVehicle, CatalogVehicle } from '@shared/types/vehicle.types';
 import type { Trip } from '@shared/types/trip.types';
@@ -26,6 +26,13 @@ import type {
 } from '@shared/types/cooperative.types';
 import { MAX_COOP_DRIVERS } from '@shared/types/cooperative.types';
 import type { AppNotification } from '@shared/types/notification.types';
+import type {
+  KycSubmission,
+  KycSubmissionInput,
+  KycFileUpload,
+  KycDocuments,
+  AdminKycRow,
+} from '@shared/types/kyc.types';
 import { Capacitor } from '@capacitor/core';
 import { SocialLogin } from '@capgo/capacitor-social-login';
 import type { BackendAdapter, CloudSnapshot, DeletionRecord } from './types';
@@ -44,6 +51,25 @@ function rowToCoop(r: Row): Cooperative {
     adminId: r.admin_id,
     createdAt: r.created_at,
     fleetParams: r.fleet_params ?? undefined,
+  };
+}
+
+/** Private bucket holding KYC documents — never public; read via signed URLs. */
+const KYC_BUCKET = 'kyc-docs';
+
+function rowToKyc(r: Row): KycSubmission {
+  return {
+    id: r.id,
+    userId: r.user_id,
+    subjectType: r.subject_type,
+    personal: r.personal ?? undefined,
+    company: r.company ?? undefined,
+    risk: r.risk ?? { economicActivity: '', sourceOfFunds: '', expectedMonthlyVolume: '', isPep: false },
+    status: r.status,
+    documents: (r.documents ?? {}) as KycDocuments,
+    rejectionReason: r.rejection_reason ?? undefined,
+    submittedAt: r.submitted_at,
+    reviewedAt: r.reviewed_at ?? undefined,
   };
 }
 
@@ -146,10 +172,26 @@ function rowToTrip(r: Row): Trip {
   };
 }
 
+function mapPlanRow(r: Row): SubscriptionPlan {
+  return {
+    id: r.id,
+    name: r.name,
+    priceNio: Number(r.price_nio) || 0,
+    priceUsd: Number(r.price_usd) || 0,
+    calcLimit: r.calc_limit,
+    features: Array.isArray(r.features) ? r.features : [],
+    capabilities: Array.isArray(r.capabilities) ? r.capabilities : undefined,
+    durationDays: r.duration_days ?? undefined,
+    isActive: !!r.is_active,
+  };
+}
+
 /** Real Supabase implementation. Requires migrations to be applied. */
 export class SupabaseBackend implements BackendAdapter {
   readonly isMock = false;
   private client: SupabaseClient;
+  /** Avoid re-writing users.role on every token refresh. */
+  private adminRoleSynced = false;
 
   constructor() {
     this.client = createClient(SUPABASE_URL as string, SUPABASE_ANON_KEY as string);
@@ -159,15 +201,68 @@ export class SupabaseBackend implements BackendAdapter {
     return isAdminEmail(email) ? 'admin' : 'driver';
   }
 
+  /** Mirrors VITE_ADMIN_EMAILS into public.users.role so RLS is_admin() passes. */
+  async syncAdminRole(force = false): Promise<void> {
+    if (force) this.adminRoleSynced = false;
+    if (this.adminRoleSynced) return;
+    const { data } = await this.client.auth.getUser();
+    const user = data.user;
+    if (!user?.email) return;
+
+    const { error: rpcErr } = await this.client.rpc('promote_admin_if_allowed');
+    if (!rpcErr) {
+      this.adminRoleSynced = true;
+      return;
+    }
+
+    await this.bindAdminRole(user.id, user.email);
+  }
+
+  async ensureUserRow(userId: string, email: string): Promise<void> {
+    const { error } = await this.client.from('users').upsert(
+      {
+        id: userId,
+        email,
+        name: email.split('@')[0] ?? 'Driver',
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'id' },
+    );
+    if (error) throw error;
+  }
+
+  private async bindAdminRole(userId: string, email: string): Promise<void> {
+    if (!isAdminEmail(email)) return;
+    if (this.adminRoleSynced) return;
+    // Upsert so admin works even when handle_new_user didn't create a row yet.
+    const { error } = await this.client.from('users').upsert(
+      {
+        id: userId,
+        email,
+        role: 'admin',
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'id' },
+    );
+    if (error) throw error;
+    this.adminRoleSynced = true;
+  }
+
+  private async buildSession(s: Session, syncAdminRole: boolean): Promise<AuthSession> {
+    const email = s.user.email!;
+    if (syncAdminRole) await this.bindAdminRole(s.user.id, email);
+    return {
+      user: { id: s.user.id, email, role: await this.role(email) },
+      accessToken: s.access_token,
+      expiresAt: (s.expires_at ?? 0) * 1000,
+    };
+  }
+
   async getSession(): Promise<AuthSession | null> {
     const { data } = await this.client.auth.getSession();
     const s = data.session;
     if (!s?.user?.email) return null;
-    return {
-      user: { id: s.user.id, email: s.user.email, role: await this.role(s.user.email) },
-      accessToken: s.access_token,
-      expiresAt: (s.expires_at ?? 0) * 1000,
-    };
+    return this.buildSession(s, true);
   }
 
   async requestOtp(email: string): Promise<{ devCode?: string }> {
@@ -192,11 +287,7 @@ export class SupabaseBackend implements BackendAdapter {
     if (error) throw error;
     const s = data.session;
     if (!s?.user?.email) throw new Error('No se pudo iniciar sesión.');
-    return {
-      user: { id: s.user.id, email: s.user.email, role: await this.role(s.user.email) },
-      accessToken: s.access_token,
-      expiresAt: (s.expires_at ?? 0) * 1000,
-    };
+    return this.buildSession(s, true);
   }
 
   async signInWithPassword(email: string, password: string): Promise<AuthSession> {
@@ -204,11 +295,7 @@ export class SupabaseBackend implements BackendAdapter {
     if (error) throw error;
     const s = data.session;
     if (!s?.user?.email) throw new Error('No se pudo iniciar sesión.');
-    return {
-      user: { id: s.user.id, email: s.user.email, role: await this.role(s.user.email) },
-      accessToken: s.access_token,
-      expiresAt: (s.expires_at ?? 0) * 1000,
-    };
+    return this.buildSession(s, true);
   }
 
   async signUp(name: string, email: string, password: string): Promise<AuthSession | null> {
@@ -243,11 +330,7 @@ export class SupabaseBackend implements BackendAdapter {
     // emails a confirmation code. The caller then verifies it (purpose 'signup').
     // If confirmation is disabled, a session comes back and we log in directly.
     if (!s?.user?.email) return null;
-    return {
-      user: { id: s.user.id, email: s.user.email, role: await this.role(s.user.email) },
-      accessToken: s.access_token,
-      expiresAt: (s.expires_at ?? 0) * 1000,
-    };
+    return this.buildSession(s, true);
   }
 
   async resendVerification(email: string): Promise<{ devCode?: string }> {
@@ -286,11 +369,7 @@ export class SupabaseBackend implements BackendAdapter {
       if (error) throw error;
       const s = data.session;
       if (!s?.user?.email) throw new Error('No se pudo iniciar sesión con Google.');
-      return {
-        user: { id: s.user.id, email: s.user.email, role: await this.role(s.user.email) },
-        accessToken: s.access_token,
-        expiresAt: (s.expires_at ?? 0) * 1000,
-      };
+      return this.buildSession(s, true);
     }
 
     // Web: standard OAuth redirect; the session is picked up on return.
@@ -315,6 +394,7 @@ export class SupabaseBackend implements BackendAdapter {
   }
 
   async signOut(): Promise<void> {
+    this.adminRoleSynced = false;
     await this.client.auth.signOut();
   }
 
@@ -323,6 +403,42 @@ export class SupabaseBackend implements BackendAdapter {
     const { error } = await this.client.functions.invoke('delete-account');
     if (error) throw error;
     await this.signOut();
+  }
+
+  watchSession(onChange: (session: AuthSession | null) => void): () => void {
+    const {
+      data: { subscription },
+    } = this.client.auth.onAuthStateChange(async (event, s) => {
+      if (s?.user?.email) {
+        // Token refresh fires often — don't hit the DB or reload driver stores.
+        const syncRole =
+          event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'INITIAL_SESSION';
+        onChange(await this.buildSession(s, syncRole));
+      } else {
+        onChange(null);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }
+
+  async validateTripCalculation(payload: import('./types').TripValidationPayload): Promise<void> {
+    const { clientResult, ...input } = payload;
+    const { data, error } = await this.client.functions.invoke('calculate-trip', {
+      body: input,
+    });
+    // Edge Function may not be deployed yet — local save still works offline-first.
+    if (error || !data) return;
+    const server = data as {
+      netProfit?: number;
+      margin?: number;
+      status?: string;
+    };
+    const profitOk = Math.abs((server.netProfit ?? 0) - clientResult.netProfit) < 0.02;
+    const marginOk = Math.abs((server.margin ?? 0) - clientResult.margin) < 0.0001;
+    const statusOk = server.status === clientResult.status;
+    if (!profitOk || !marginOk || !statusOk) {
+      throw new Error('El cálculo no coincide con el servidor.');
+    }
   }
 
   async getProfile(userId: string): Promise<UserProfile | null> {
@@ -343,6 +459,7 @@ export class SupabaseBackend implements BackendAdapter {
       subscriptionStatus: data.subscription_status ?? undefined,
       currentPlan: data.current_plan ?? undefined,
       freeCalculationsUsed: data.free_calculations_used ?? 0,
+      kycStatus: data.kyc_status ?? 'none',
     };
   }
 
@@ -366,6 +483,7 @@ export class SupabaseBackend implements BackendAdapter {
           subscriptionStatus: profileRes.data.subscription_status ?? undefined,
           currentPlan: profileRes.data.current_plan ?? undefined,
           freeCalculationsUsed: profileRes.data.free_calculations_used ?? 0,
+          kycStatus: profileRes.data.kyc_status ?? 'none',
         }
       : null;
 
@@ -408,19 +526,22 @@ export class SupabaseBackend implements BackendAdapter {
     }
   }
 
-  async listPlans(): Promise<SubscriptionPlan[]> {
+  async listPlans(includePlanId?: string): Promise<SubscriptionPlan[]> {
     const { data } = await this.client.from('plans').select('*').eq('is_active', true);
-    return (data ?? []).map((r: Row) => ({
-      id: r.id,
-      name: r.name,
-      priceNio: Number(r.price_nio) || 0,
-      priceUsd: Number(r.price_usd) || 0,
-      calcLimit: r.calc_limit,
-      features: Array.isArray(r.features) ? r.features : [],
-      capabilities: Array.isArray(r.capabilities) ? r.capabilities : undefined,
-      durationDays: r.duration_days ?? undefined,
-      isActive: !!r.is_active,
-    }));
+    const plans = (data ?? []).map(mapPlanRow);
+    if (
+      includePlanId &&
+      includePlanId !== 'free' &&
+      !plans.some((p) => p.id === includePlanId)
+    ) {
+      const { data: extra } = await this.client
+        .from('plans')
+        .select('*')
+        .eq('id', includePlanId)
+        .maybeSingle();
+      if (extra) plans.push(mapPlanRow(extra));
+    }
+    return plans;
   }
 
   async getSubscription(userId: string): Promise<Subscription | null> {
@@ -481,6 +602,24 @@ export class SupabaseBackend implements BackendAdapter {
     const checkoutUrl = (data as { checkoutUrl?: string } | null)?.checkoutUrl;
     if (!checkoutUrl) throw new Error('No checkout URL returned');
     return { checkoutUrl };
+  }
+
+  async cancelSubscription(userId: string): Promise<void> {
+    const { data: authData } = await this.client.auth.getUser();
+    const uid = authData.user?.id ?? userId;
+    const { error } = await this.client
+      .from('users')
+      .update({
+        current_plan: 'free',
+        subscription_status: 'cancelled',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', uid);
+    if (error) throw error;
+  }
+
+  async listCatalog(): Promise<CatalogVehicle[]> {
+    return this.adminListCatalog();
   }
 
   async recordPayment(payment: Payment): Promise<Payment> {
@@ -574,6 +713,142 @@ export class SupabaseBackend implements BackendAdapter {
     }
   }
 
+  // ---- KYC (identity verification) ----
+  async getKyc(userId: string): Promise<KycSubmission | null> {
+    const { data: authData } = await this.client.auth.getUser();
+    const uid = authData.user?.id ?? userId;
+    const { data } = await this.client
+      .from('kyc_submissions')
+      .select('*')
+      .eq('user_id', uid)
+      .order('submitted_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return data ? rowToKyc(data) : null;
+  }
+
+  async submitKyc(input: KycSubmissionInput, files: KycFileUpload[]): Promise<KycSubmission> {
+    const { data: authData } = await this.client.auth.getUser();
+    const uid = authData.user?.id;
+    if (!uid) throw new Error('No autenticado');
+    const submissionId = crypto.randomUUID();
+
+    // Upload each document to the PRIVATE bucket under {uid}/{submissionId}/.
+    // Only the storage path is persisted — never a public URL.
+    const documents: KycDocuments = {};
+    for (const f of files) {
+      const ext = f.file.name.split('.').pop()?.toLowerCase() || 'bin';
+      const path = `${uid}/${submissionId}/${f.key}.${ext}`;
+      const { error: upErr } = await this.client.storage
+        .from(KYC_BUCKET)
+        .upload(path, f.file, { upsert: true, contentType: f.file.type || undefined });
+      if (upErr) throw upErr;
+      documents[f.key] = path;
+    }
+
+    // One active submission per user: drop prior rows (re-submit after reject).
+    await this.client.from('kyc_submissions').delete().eq('user_id', uid);
+
+    const submittedAt = new Date().toISOString();
+    const { error } = await this.client.from('kyc_submissions').insert({
+      id: submissionId,
+      user_id: uid,
+      subject_type: input.subjectType,
+      personal: input.personal ?? null,
+      company: input.company ?? null,
+      risk: input.risk,
+      status: 'submitted',
+      documents,
+      submitted_at: submittedAt,
+    });
+    if (error) throw error;
+
+    await this.client
+      .from('users')
+      .update({ kyc_status: 'submitted', updated_at: submittedAt })
+      .eq('id', uid);
+
+    return {
+      id: submissionId,
+      userId: uid,
+      subjectType: input.subjectType,
+      personal: input.personal,
+      company: input.company,
+      risk: input.risk,
+      status: 'submitted',
+      documents,
+      submittedAt,
+    };
+  }
+
+  async getKycDocumentUrl(ref: string): Promise<string> {
+    // Mint a short-lived signed URL for the private object (no public access).
+    const { data, error } = await this.client.storage
+      .from(KYC_BUCKET)
+      .createSignedUrl(ref, 120);
+    if (error || !data?.signedUrl) throw error ?? new Error('No se pudo generar el enlace');
+    return data.signedUrl;
+  }
+
+  async adminListKyc(): Promise<AdminKycRow[]> {
+    const { data, error } = await this.client
+      .from('kyc_submissions')
+      .select('*, users(name, email)')
+      .order('submitted_at', { ascending: false });
+    if (error) throw error;
+    const rows: AdminKycRow[] = (data ?? []).map((r: Row) => ({
+      ...rowToKyc(r),
+      userName: r.users?.name ?? undefined,
+      userEmail: r.users?.email ?? undefined,
+    }));
+    return rows.sort((a, b) => {
+      if (a.status === 'submitted' && b.status !== 'submitted') return -1;
+      if (a.status !== 'submitted' && b.status === 'submitted') return 1;
+      return b.submittedAt.localeCompare(a.submittedAt);
+    });
+  }
+
+  async adminReviewKyc(id: string, approve: boolean, reason?: string): Promise<void> {
+    const { data: sub } = await this.client
+      .from('kyc_submissions')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    if (!sub) return;
+    await this.client
+      .from('kyc_submissions')
+      .update({
+        status: approve ? 'verified' : 'rejected',
+        rejection_reason: approve ? null : (reason ?? null),
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq('id', id);
+    await this.client
+      .from('users')
+      .update({
+        kyc_status: approve ? 'verified' : 'rejected',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', sub.user_id);
+    if (approve) {
+      await this.createNotification(
+        sub.user_id,
+        'Verificación aprobada',
+        'Tu identidad fue verificada. Tu plan ya puede activarse.',
+        'system',
+        '/suscripcion',
+      );
+    } else {
+      await this.createNotification(
+        sub.user_id,
+        'Verificación rechazada',
+        reason || 'No pudimos verificar tu identidad. Revisa tus datos e inténtalo de nuevo.',
+        'system',
+        '/suscripcion',
+      );
+    }
+  }
+
   async adminListUsers(): Promise<AdminUserRow[]> {
     const { data } = await this.client.rpc('admin_list_users');
     return (data ?? []) as AdminUserRow[];
@@ -607,7 +882,12 @@ export class SupabaseBackend implements BackendAdapter {
   }
 
   async adminListPlans(): Promise<SubscriptionPlan[]> {
-    return this.listPlans();
+    const { data, error } = await this.client
+      .from('plans')
+      .select('*')
+      .order('price_nio', { ascending: true });
+    if (error) throw error;
+    return (data ?? []).map(mapPlanRow);
   }
 
   async adminUpsertPlan(plan: SubscriptionPlan): Promise<SubscriptionPlan> {
@@ -679,6 +959,21 @@ export class SupabaseBackend implements BackendAdapter {
   }
 
   async adminUpsertCatalog(entry: CatalogVehicle): Promise<CatalogVehicle> {
+    await this.syncAdminRole(true);
+    const payload = {
+      id: entry.id,
+      unit_type: entry.type,
+      make: entry.make,
+      model: entry.model,
+      category: entry.category ?? null,
+      fuel_type: entry.fuelType,
+      est_km_per_liter: entry.estKmPerLiter,
+    };
+    const { error: rpcErr } = await this.client.rpc('admin_upsert_vehicle_catalog', {
+      p_entry: payload,
+    });
+    if (!rpcErr) return entry;
+
     const { error } = await this.client.from('vehicle_catalog').upsert({
       id: entry.id,
       unit_type: entry.type,
@@ -693,6 +988,11 @@ export class SupabaseBackend implements BackendAdapter {
   }
 
   async adminDeleteCatalog(id: string): Promise<void> {
+    await this.syncAdminRole(true);
+    const { error: rpcErr } = await this.client.rpc('admin_delete_vehicle_catalog', {
+      p_id: id,
+    });
+    if (!rpcErr) return;
     const { error } = await this.client.from('vehicle_catalog').delete().eq('id', id);
     if (error) throw error;
   }
@@ -922,12 +1222,22 @@ export class SupabaseBackend implements BackendAdapter {
     await this.client.from('payments').insert({
       id: crypto.randomUUID(),
       user_id: coopRow.admin_id,
+      plan_id: 'coop',
       amount,
       currency: 'NIO',
       method: 'transfer',
       status: 'confirmed',
       paid_at: new Date().toISOString(),
     });
+    await this.client
+      .from('users')
+      .update({
+        current_plan: 'coop',
+        subscription_status: 'active',
+        free_calculations_used: 0,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', coopRow.admin_id);
   }
 
   // ---- Notifications ----
@@ -982,6 +1292,30 @@ export class SupabaseBackend implements BackendAdapter {
 
   async deleteNotification(id: string): Promise<void> {
     await this.client.from('notifications').delete().eq('id', id);
+  }
+
+  subscribeNotifications(
+    userId: string,
+    onUpdate: (items: AppNotification[]) => void,
+  ): () => void {
+    const channel = this.client
+      .channel(`notifications:${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${userId}`,
+        },
+        () => {
+          void this.listNotifications(userId).then(onUpdate);
+        },
+      )
+      .subscribe();
+    return () => {
+      void this.client.removeChannel(channel);
+    };
   }
 
   // ---- Admin: roles ----

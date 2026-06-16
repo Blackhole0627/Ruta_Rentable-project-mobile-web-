@@ -5,10 +5,14 @@ import { useAuthStore } from './useAuthStore';
 
 const backend = getBackend();
 
+let stopRealtime: (() => void) | null = null;
+
 interface NotificationState {
   items: AppNotification[];
   unread: number;
   load: () => Promise<void>;
+  startRealtime: () => void;
+  stopRealtime: () => void;
   markRead: (id: string) => Promise<void>;
   markAllRead: () => Promise<void>;
   remove: (id: string) => Promise<void>;
@@ -25,6 +29,17 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     }
     const items = await backend.listNotifications(session.user.id);
     set({ items, unread: items.filter((n) => !n.read).length });
+  },
+  startRealtime: () => {
+    const session = useAuthStore.getState().session;
+    if (!session || stopRealtime) return;
+    stopRealtime = backend.subscribeNotifications(session.user.id, (items) => {
+      set({ items, unread: items.filter((n) => !n.read).length });
+    });
+  },
+  stopRealtime: () => {
+    stopRealtime?.();
+    stopRealtime = null;
   },
   markRead: async (id) => {
     await backend.markNotificationRead(id);

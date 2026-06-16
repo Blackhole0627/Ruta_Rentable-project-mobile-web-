@@ -13,6 +13,40 @@ function tripTs(t: Trip): number {
   return new Date(t.updatedAt ?? t.createdAt).getTime();
 }
 
+/** Ensure exactly one vehicle is marked active (most recently touched wins). */
+export async function normalizeActiveVehicles(): Promise<void> {
+  const vehicles = await db.vehicles.toArray();
+  if (!vehicles.length) return;
+
+  if (vehicles.length === 1) {
+    if (!vehicles[0].isActive) {
+      await db.vehicles.update(vehicles[0].id, { isActive: true, updatedAt: new Date() });
+    }
+    return;
+  }
+
+  const actives = vehicles.filter((v) => v.isActive);
+  let keepId: string;
+  if (actives.length === 1) {
+    keepId = actives[0].id;
+  } else {
+    const pool = actives.length > 1 ? actives : vehicles;
+    keepId = pool.reduce((best, v) => (vehicleTs(v) > vehicleTs(best) ? v : best)).id;
+  }
+
+  const needsFix = vehicles.some((v) => v.isActive !== (v.id === keepId));
+  if (!needsFix) return;
+
+  const now = new Date();
+  await Promise.all(
+    vehicles.map((v) => {
+      const shouldBeActive = v.id === keepId;
+      if (v.isActive === shouldBeActive) return Promise.resolve();
+      return db.vehicles.update(v.id, { isActive: shouldBeActive, updatedAt: now });
+    }),
+  );
+}
+
 export interface SyncResult {
   pulled: number;
   pushed: number;
@@ -104,6 +138,7 @@ export async function syncNow(userId: string): Promise<SyncResult> {
       pulled++;
     }
   }
+  await normalizeActiveVehicles();
 
   const localTrips = new Map(local.trips.map((t) => [t.id, t]));
   for (const ct of cloud.trips) {
@@ -140,6 +175,7 @@ export async function syncNow(userId: string): Promise<SyncResult> {
   // 3. Always sync the PROFILE (identity, plan, role) so the backend recognises
   // the user — even on the free tier. Only the trip/vehicle HISTORY backup is
   // gated, so free users still get a users row (admin visibility, plan state).
+  await normalizeActiveVehicles();
   const union = await readLocalSnapshot();
   if (canPush) {
     await backend.pushData(userId, union);

@@ -71,12 +71,18 @@ export function TopNav() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { status } = useAuthStore();
-  const { items, unread, load, markRead, markAllRead, remove } = useNotificationStore();
+  const { items, unread, load, startRealtime, stopRealtime, markRead, markAllRead, remove } =
+    useNotificationStore();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    if (status === 'authenticated') load();
-  }, [status, load]);
+    if (status === 'authenticated') {
+      load();
+      startRealtime();
+      return () => stopRealtime();
+    }
+    stopRealtime();
+  }, [status, load, startRealtime, stopRealtime]);
 
   return (
     <header className="sticky top-0 z-40 flex items-center justify-between border-b border-road-100 bg-white/95 px-4 py-2.5 backdrop-blur">

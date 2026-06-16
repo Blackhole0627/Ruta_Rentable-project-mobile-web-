@@ -1,4 +1,5 @@
 import type { SubscriptionStatus, PlanCapability } from './subscription.types';
+import type { KycStatus } from './kyc.types';
 import type { UserRole } from './auth.types';
 
 export type Currency = 'NIO' | 'USD';
@@ -26,6 +27,10 @@ export interface UserProfile {
   /** True when the user belongs to a cooperative whose admin's plan is active
    * (grants premium to member drivers — they don't pay individually). */
   coopActive?: boolean;
+  /** Identity-verification state (AML/UAF). A paid plan only becomes effective
+   * once this is 'verified'. Admin-authoritative — set by the KYC review, never
+   * pushed up by client sync. Absent/undefined is treated as 'none'. */
+  kycStatus?: KycStatus;
   /** Capabilities of the user's EFFECTIVE plan (free if expired). Denormalised
    * from the admin-defined plan by the subscription store so gating reflects
    * admin changes. */

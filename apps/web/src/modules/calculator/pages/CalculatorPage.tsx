@@ -7,11 +7,14 @@ import {
   effectiveCommissionPct,
   type CalculatorFormState,
 } from '../hooks/useCalculator';
+import { getBackend } from '@/core/backend';
+import { useAuthStore } from '@/core/store/useAuthStore';
+import { calculateCostPerKm } from '@/core/financial-model/costPerKm';
+import { DEFAULT_PARAMS } from '@/core/constants/defaultParams';
 import { useUserStore } from '@/core/store/useUserStore';
 import { useVehicleStore } from '@/core/store/useVehicleStore';
 import { useTripStore } from '@/core/store/useTripStore';
 import { useSettingsStore } from '@/core/store/useSettingsStore';
-import { useAuthStore } from '@/core/store/useAuthStore';
 import {
   useSubscriptionStore,
   isCalcLimitReached,
@@ -43,8 +46,9 @@ export function CalculatorPage() {
   const { vehicle } = useVehicleStore();
   const { settings } = useSettingsStore();
   const { saveTrip, loadTrips } = useTripStore();
-  const { status } = useAuthStore();
   const { plans, load: loadPlans } = useSubscriptionStore();
+  const { status } = useAuthStore();
+  const backend = getBackend();
   const [form, setForm] = useState<CalculatorFormState>(initialForm('indrive'));
   const [showPaywall, setShowPaywall] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -53,17 +57,13 @@ export function CalculatorPage() {
 
   useEffect(() => {
     loadTrips();
-  }, [loadTrips]);
+    loadPlans();
+  }, [loadTrips, loadPlans]);
 
-  useEffect(() => {
-    if (status === 'authenticated') loadPlans();
-  }, [status, loadPlans]);
-
-  const isAuthed = status === 'authenticated';
   const isUnlimited = hasCapability(user, 'unlimitedCalc');
   const usedThisMonth = freeCalcsUsedThisMonth(user);
   const onFreePlan = !isUnlimited;
-  const limitReached = isAuthed && isCalcLimitReached(user, usedThisMonth, plans);
+  const limitReached = isCalcLimitReached(user, usedThisMonth, plans);
   const freeLimit = plans.find((p) => p.id === 'free')?.calcLimit ?? null;
   const remaining = freeLimit != null && !isUnlimited ? Math.max(0, freeLimit - usedThisMonth) : null;
 
@@ -78,11 +78,57 @@ export function CalculatorPage() {
   };
 
   const handleSave = async () => {
-    if (!result || !vehicle) return;
+    if (!result || !vehicle || !settings) return;
     if (limitReached) {
       setShowPaywall(true);
       return;
     }
+
+    if (!backend.isMock && status === 'authenticated') {
+      const defaults =
+        vehicle.unitType === 'car' ? DEFAULT_PARAMS.car : DEFAULT_PARAMS.motorcycle;
+      const fuelPrice =
+        vehicle.fuelPricePerUnit ||
+        (user?.fuelUnit === 'gallon'
+          ? settings.gasolinePerLiter * 3.785
+          : settings.gasolinePerLiter);
+      const costBreakdown = calculateCostPerKm({
+        fuelPricePerUnit: fuelPrice,
+        fuelEfficiency: vehicle.realKmPerLiter || defaults.estKmPerLiter,
+        tireCost: vehicle.tireCost || defaults.tireCostNIO,
+        tireLifeKm: vehicle.tireLifeKm || defaults.tireLifeKm,
+        oilChangeCost: vehicle.oilChangeCost || defaults.oilChangeCostNIO,
+        oilChangeFreqKm: vehicle.oilChangeFreqKm || defaults.oilChangeFreqKm,
+        monthlyMaintenance: vehicle.monthlyMaintenance || defaults.monthlyMaintenanceNIO,
+        monthlyKm: vehicle.monthlyKm || defaults.monthlyKm,
+        vehicleValue: vehicle.vehicleValue || defaults.vehicleValueNIO,
+        usefulLifeKm: vehicle.usefulLifeKm || defaults.usefulLifeKm,
+        monthlyFixedCosts: vehicle.monthlyFixedCosts || defaults.monthlyFixedCostsNIO,
+      });
+      const commissionPct = effectiveCommissionPct(
+        form,
+        settings.commissions[form.platform] ?? PLATFORM_COMMISSIONS[form.platform],
+      );
+      try {
+        await backend.validateTripCalculation({
+          kmWithPassenger: form.kmWithPassenger || 0,
+          deadKm: form.deadKm || 0,
+          fareCharged: form.fareCharged || 0,
+          commissionPct,
+          desiredMarginPct: settings.desiredMargin * 100,
+          costBreakdown,
+          thresholds: {
+            profitableThreshold: settings.profitableThreshold,
+            acceptableThreshold: settings.acceptableThreshold,
+          },
+          clientResult: result,
+        });
+      } catch {
+        toast.error(t('No se pudo validar el cálculo.'));
+        return;
+      }
+    }
+
     const trip: Trip = {
       id: crypto.randomUUID(),
       vehicleId: vehicle.id,
@@ -106,7 +152,7 @@ export function CalculatorPage() {
       status: result.status,
     };
     await saveTrip(trip);
-    if (isAuthed && onFreePlan) await recordCalculation();
+    if (onFreePlan) await recordCalculation();
     toast.success(t('Viaje guardado'));
     // Confirm the save with a tick, then clear the form for the next trip.
     setSaved(true);
@@ -141,7 +187,7 @@ export function CalculatorPage() {
 
       <ReminderBanners />
 
-      {isAuthed && onFreePlan && remaining != null && (
+      {onFreePlan && remaining != null && (
         <div className="flex items-center justify-between rounded-lg bg-amber-100 px-3 py-2 text-sm text-amber-900">
           <span>{t('Te quedan {n} cálculos gratis', { n: remaining })}</span>
           <Link to="/suscripcion" className="font-semibold underline">

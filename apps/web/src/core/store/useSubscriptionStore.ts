@@ -4,16 +4,38 @@ import type {
   SubscriptionPlan,
   Subscription,
   Payment,
-  PaymentMethod,
 } from '@shared/types/subscription.types';
 import type { UserProfile } from '@shared/types/user.types';
 import { getBackend } from '../backend';
 import { useUserStore } from './useUserStore';
-import { hasCapability, defaultCapabilitiesFor } from '../subscription/planAccess';
+import {
+  hasCapability,
+  capabilitiesForPlan,
+  defaultCapabilitiesFor,
+  findPlan,
+  isKycVerified,
+} from '../subscription/planAccess';
 
 /** Days a paid cycle lasts for a plan (admin-set; falls back to 30). */
 function planDurationDays(plan: SubscriptionPlan | undefined): number {
   return plan?.durationDays && plan.durationDays > 0 ? plan.durationDays : 30;
+}
+
+/** Pick the canonical plan id from profile, subscription, or last payment. */
+function resolveCurrentPlanId(
+  raw: string | undefined,
+  plans: SubscriptionPlan[],
+  subscription: Subscription | null,
+  payments: Payment[],
+): string {
+  const id = raw ?? 'free';
+  if (id === 'free') return 'free';
+  if (findPlan(plans, id)) return id;
+  const subId = subscription?.planId;
+  if (subId && findPlan(plans, subId)) return subId;
+  const paid = payments.find((p) => p.status === 'confirmed' && p.planId);
+  if (paid?.planId && findPlan(plans, paid.planId)) return paid.planId;
+  return id;
 }
 
 const backend = getBackend();
@@ -24,7 +46,6 @@ interface SubscriptionState {
   payments: Payment[];
   isLoading: boolean;
   load: () => Promise<void>;
-  subscribe: (planId: string, method: PaymentMethod) => Promise<void>;
   /**
    * Start an automatic Poket card payment. Redirects the browser to the hosted
    * checkout and resolves `{ redirected: true }`. On the mock backend the
@@ -46,7 +67,7 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
   load: async () => {
     const user = useUserStore.getState().user;
     set({ isLoading: true });
-    const plans = await backend.listPlans();
+    const plans = await backend.listPlans(user?.currentPlan);
     if (!user) {
       set({ plans, isLoading: false });
       return;
@@ -66,8 +87,17 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
           currentPlan: profile.currentPlan,
           subscriptionStatus: profile.subscriptionStatus,
           freeCalculationsUsed: profile.freeCalculationsUsed,
+          // KYC is admin-authoritative — always take the server's value.
+          kycStatus: profile.kycStatus ?? 'none',
         }
       : { ...user };
+
+    next.currentPlan = resolveCurrentPlanId(
+      next.currentPlan,
+      plans,
+      subscription,
+      payments ?? [],
+    );
 
     // Expiry: a paid plan lasts `durationDays` (admin-set) from the last
     // confirmed payment. Past that it lapses to 'overdue' (caps fall to free).
@@ -86,14 +116,18 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
     }
 
     // Snapshot the EFFECTIVE plan's admin-defined capabilities onto the user so
-    // gating across the app reflects whatever the admin configured.
-    const active =
-      next.subscriptionStatus === 'active' &&
+    // gating across the app reflects whatever the admin configured. A paid plan
+    // is only effective once KYC is verified (AML/UAF regulatory gate).
+    const planEffective =
+      planId !== 'free' &&
+      isKycVerified(next) &&
+      (next.subscriptionStatus === 'active' || next.subscriptionStatus === 'trial') &&
       (!next.subscriptionEndsAt ||
         new Date(next.subscriptionEndsAt).getTime() >= Date.now());
-    const effId = active ? planId : 'free';
-    const effPlan = plans.find((p) => p.id === effId);
-    next.planCapabilities = effPlan?.capabilities ?? defaultCapabilitiesFor(effId);
+    const effId = planEffective ? planId : 'free';
+    const ref = findPlan(plans, effId);
+    const effPlan = ref ? plans.find((p) => p.id === ref.id) : undefined;
+    next.planCapabilities = capabilitiesForPlan(effPlan, effId);
 
     const capsChanged =
       (next.planCapabilities ?? []).join(',') !== (user.planCapabilities ?? []).join(',');
@@ -102,40 +136,11 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
       next.subscriptionStatus !== user.subscriptionStatus ||
       (next.freeCalculationsUsed ?? 0) !== (user.freeCalculationsUsed ?? 0) ||
       next.subscriptionEndsAt !== user.subscriptionEndsAt ||
+      (next.kycStatus ?? 'none') !== (user.kycStatus ?? 'none') ||
       capsChanged;
     if (changed) await useUserStore.getState().setUser(next);
 
     set({ plans, subscription, payments, isLoading: false });
-  },
-  subscribe: async (planId, method) => {
-    const user = useUserStore.getState().user;
-    if (!user) return;
-    const plan = get().plans.find((p) => p.id === planId);
-    if (!plan) return;
-    const payment: Payment = {
-      id: crypto.randomUUID(),
-      userId: user.id,
-      amount: plan.priceNio ?? 0,
-      currency: 'NIO',
-      method,
-      status: 'confirmed',
-      paidAt: new Date().toISOString(),
-    };
-    await backend.recordPayment(payment);
-    await useUserStore.getState().setUser({
-      ...user,
-      currentPlan: planId,
-      subscriptionStatus: 'active',
-      freeCalculationsUsed: 0,
-      subscriptionEndsAt: addDays(new Date(), planDurationDays(plan)).toISOString(),
-      planCapabilities: plan.capabilities ?? defaultCapabilitiesFor(planId),
-      updatedAt: new Date(),
-    });
-    const [subscription, payments] = await Promise.all([
-      backend.getSubscription(user.id),
-      backend.listPayments(user.id),
-    ]);
-    set({ subscription, payments });
   },
   startPoketCheckout: async (planId) => {
     const user = useUserStore.getState().user;
@@ -175,12 +180,16 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
   unsubscribe: async () => {
     const user = useUserStore.getState().user;
     if (!user) return;
+    await backend.cancelSubscription(user.id);
     await useUserStore.getState().setUser({
       ...user,
       currentPlan: 'free',
       subscriptionStatus: 'cancelled',
+      subscriptionEndsAt: undefined,
+      planCapabilities: defaultCapabilitiesFor('free'),
       updatedAt: new Date(),
     });
+    await get().load();
   },
 }));
 

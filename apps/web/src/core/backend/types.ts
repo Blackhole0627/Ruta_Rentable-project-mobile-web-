@@ -16,6 +16,12 @@ import type {
   Announcement,
 } from '@shared/types/admin.types';
 import type {
+  KycSubmission,
+  KycSubmissionInput,
+  KycFileUpload,
+  AdminKycRow,
+} from '@shared/types/kyc.types';
+import type {
   Cooperative,
   CoopMember,
   FleetReport,
@@ -23,6 +29,10 @@ import type {
   CoopInvite,
 } from '@shared/types/cooperative.types';
 import type { SettingsRecord } from '../db/schema';
+import type { TripInput, TripResult } from '@shared/financial-model/tripCalculator';
+
+/** Payload sent to the server-side calculate-trip validator. */
+export type TripValidationPayload = TripInput & { clientResult: TripResult };
 
 /** A full snapshot of one user's syncable data. */
 export interface CloudSnapshot {
@@ -77,6 +87,15 @@ export interface BackendAdapter {
   sendWelcomeEmail(): Promise<void>;
   signOut(): Promise<void>;
   deleteAccount(): Promise<void>;
+  /**
+   * Listen for auth session changes (token refresh, sign-out, OAuth return).
+   * Returns an unsubscribe function.
+   */
+  watchSession(onChange: (session: AuthSession | null) => void): () => void;
+  /** Keep public.users.role in sync with VITE_ADMIN_EMAILS (Supabase RLS). */
+  syncAdminRole(force?: boolean): Promise<void>;
+  /** Ensure a public.users profile row exists (required for trips FK + RLS). */
+  ensureUserRow(userId: string, email: string): Promise<void>;
 
   // ---- Data sync ----
   /** Fetch just the user's profile (plan/subscription state) from the cloud. */
@@ -84,9 +103,15 @@ export interface BackendAdapter {
   pullData(userId: string): Promise<CloudSnapshot>;
   pushData(userId: string, snapshot: CloudSnapshot): Promise<void>;
   deleteRecords(userId: string, deletions: DeletionRecord[]): Promise<void>;
+  /**
+   * Re-validate a trip calculation server-side. No-op on mock; throws if the
+   * client result doesn't match on Supabase.
+   */
+  validateTripCalculation(payload: TripValidationPayload): Promise<void>;
 
   // ---- Subscriptions & payments ----
-  listPlans(): Promise<SubscriptionPlan[]>;
+  /** When set, also returns that plan even if marked inactive (for label resolution). */
+  listPlans(includePlanId?: string): Promise<SubscriptionPlan[]>;
   getSubscription(userId: string): Promise<Subscription | null>;
   listPayments(userId: string): Promise<Payment[]>;
   recordPayment(payment: Payment): Promise<Payment>;
@@ -96,6 +121,36 @@ export interface BackendAdapter {
    * to. The subscription is activated later by the Poket webhook.
    */
   createPoketLink(planId: string): Promise<{ checkoutUrl: string }>;
+  /** Cancel the user's paid plan (reverts to free). */
+  cancelSubscription(userId: string): Promise<void>;
+  /** Driver-facing vehicle catalog (same source as admin catalog). */
+  listCatalog(): Promise<CatalogVehicle[]>;
+
+  // ---- KYC (identity verification) ----
+  /** The driver's current KYC submission, if any. */
+  getKyc(userId: string): Promise<KycSubmission | null>;
+  /**
+   * Submit (or re-submit after rejection) a KYC application. Documents are
+   * uploaded to private storage; only their paths/refs are persisted. Sets the
+   * user's kycStatus to 'submitted'. Returns the stored submission.
+   */
+  submitKyc(input: KycSubmissionInput, files: KycFileUpload[]): Promise<KycSubmission>;
+  /**
+   * Resolve a stored document ref to a viewable URL. On Supabase this mints a
+   * short-lived signed URL for the private bucket; the mock returns the inline
+   * data URL unchanged.
+   */
+  getKycDocumentUrl(ref: string): Promise<string>;
+
+  // ---- Admin: KYC review ----
+  /** Pending-first queue of all KYC submissions with joined user info. */
+  adminListKyc(): Promise<AdminKycRow[]>;
+  /**
+   * Approve or reject a submission. Approve → user kycStatus 'verified' (paid
+   * plan can now activate). Reject → 'rejected' with a reason; driver can
+   * re-submit. Notifies the driver either way.
+   */
+  adminReviewKyc(id: string, approve: boolean, reason?: string): Promise<void>;
 
   // ---- Admin ----
   adminListUsers(): Promise<AdminUserRow[]>;
@@ -137,6 +192,14 @@ export interface BackendAdapter {
   markNotificationRead(id: string): Promise<void>;
   markAllNotificationsRead(userId: string): Promise<void>;
   deleteNotification(id: string): Promise<void>;
+  /**
+   * Live notification updates. Returns an unsubscribe function. Mock uses Dexie
+   * liveQuery; Supabase uses Realtime postgres_changes on `notifications`.
+   */
+  subscribeNotifications(
+    userId: string,
+    onUpdate: (items: AppNotification[]) => void,
+  ): () => void;
 
   // ---- Admin: roles ----
   adminSetUserRole(userId: string, role: UserRole): Promise<void>;

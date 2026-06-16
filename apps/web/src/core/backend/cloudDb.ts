@@ -11,6 +11,7 @@ import type {
 import type { GlobalParameters, Announcement } from '@shared/types/admin.types';
 import type { Cooperative, CoopMember } from '@shared/types/cooperative.types';
 import type { AppNotification } from '@shared/types/notification.types';
+import type { KycSubmission } from '@shared/types/kyc.types';
 import type { Platform } from '@shared/types/trip.types';
 import type { SettingsRecord } from '../db/schema';
 import { DEFAULT_PARAMS } from '../constants/defaultParams';
@@ -51,6 +52,7 @@ class CloudDB extends Dexie {
   cooperatives!: Table<Cooperative, string>;
   coopMembers!: Table<CoopMember, string>;
   notifications!: Table<AppNotification, string>;
+  kycSubmissions!: Table<KycSubmission, string>;
   meta!: Table<MetaRecord, string>;
 
   constructor() {
@@ -75,6 +77,9 @@ class CloudDB extends Dexie {
     });
     this.version(3).stores({
       notifications: 'id, userId, read, createdAt',
+    });
+    this.version(4).stores({
+      kycSubmissions: 'id, userId, status, submittedAt',
     });
   }
 }
@@ -246,6 +251,7 @@ export async function ensureCloudSeed(): Promise<void> {
         subscriptionStatus: 'active',
         currentPlan: 'pro',
         freeCalculationsUsed: 0,
+        kycStatus: 'verified',
       });
       await cloudDb.auth.put({ email: adminEmail.toLowerCase(), userId: adminId, role: 'admin' });
 
@@ -282,6 +288,9 @@ export async function ensureCloudSeed(): Promise<void> {
           subscriptionStatus: status,
           currentPlan: plan,
           freeCalculationsUsed: plan === 'free' ? Math.min(5, i + 1) : 0,
+          // Grandfather existing paid demo drivers as verified so their active
+          // plans stay effective; free-tier users need no KYC.
+          kycStatus: plan !== 'free' ? 'verified' : 'none',
         });
         await cloudDb.auth.put({ email: email.toLowerCase(), userId, role: 'driver' });
 

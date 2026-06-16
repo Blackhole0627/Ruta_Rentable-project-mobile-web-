@@ -24,9 +24,10 @@ export default function App() {
   const { loadUser, isLoading: userLoading } = useUserStore();
   const { loadVehicles } = useVehicleStore();
   const { loadSettings } = useSettingsStore();
-  const { init, status } = useAuthStore();
+  const { init, status, session } = useAuthStore();
   const { sync } = useSyncStore();
   const isOnline = useOnlineStatus();
+  const isAdmin = session?.user.role === 'admin';
 
   useEffect(() => {
     runMigrations().then(async () => {
@@ -35,20 +36,28 @@ export default function App() {
     });
   }, [loadUser, loadVehicles, loadSettings, init]);
 
-  // Re-sync automatically when connectivity is restored.
+  // Re-sync automatically when connectivity is restored (driver app only).
   useEffect(() => {
-    if (isOnline && status === 'authenticated') sync();
-  }, [isOnline, status, sync]);
+    if (isOnline && status === 'authenticated' && !isAdmin) sync();
+  }, [isOnline, status, sync, isAdmin]);
 
-  // On sign-in, refresh subscription (plan capabilities / expiry) and
-  // cooperative membership so feature gating is correct app-wide — not only
-  // after visiting the Subscription/Cooperativa screens.
+  // Subscription + coop gating for the driver shell — not needed in admin panel.
   useEffect(() => {
-    if (status === 'authenticated') {
+    if (status === 'authenticated' && !isAdmin) {
       useSubscriptionStore.getState().load();
       useCooperativeStore.getState().load();
     }
-  }, [status]);
+  }, [status, isAdmin]);
+
+  // Re-fetch plans when the driver tab regains focus (skip admin panel).
+  useEffect(() => {
+    if (status !== 'authenticated' || isAdmin) return;
+    const onFocus = () => {
+      useSubscriptionStore.getState().load();
+    };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [status, isAdmin]);
 
   if (userLoading) {
     return (

@@ -24,9 +24,18 @@ import type {
 } from '@shared/types/cooperative.types';
 import { MAX_COOP_DRIVERS } from '@shared/types/cooperative.types';
 import type { AppNotification } from '@shared/types/notification.types';
+import type {
+  KycSubmission,
+  KycSubmissionInput,
+  KycFileUpload,
+  KycDocuments,
+  AdminKycRow,
+} from '@shared/types/kyc.types';
+import { liveQuery } from 'dexie';
 import type { BackendAdapter, CloudSnapshot, DeletionRecord } from './types';
 import { cloudDb, ensureCloudSeed, type CloudUser } from './cloudDb';
 import { isAdminEmail } from './config';
+import { kycFileToDataUrl } from '@/shared/utils/image';
 import { loadStoredSession, storeSession, clearStoredSession } from './session';
 
 const SESSION_TTL = 1000 * 60 * 60 * 24 * 30; // 30 days
@@ -223,6 +232,7 @@ export class MockBackend implements BackendAdapter {
         cloudDb.auth,
         cloudDb.subscriptions,
         cloudDb.payments,
+        cloudDb.kycSubmissions,
       ],
       async () => {
         await cloudDb.users.delete(userId);
@@ -232,9 +242,27 @@ export class MockBackend implements BackendAdapter {
         await cloudDb.trips.where('userId').equals(userId).delete();
         await cloudDb.subscriptions.where('userId').equals(userId).delete();
         await cloudDb.payments.where('userId').equals(userId).delete();
+        await cloudDb.kycSubmissions.where('userId').equals(userId).delete();
       },
     );
     await this.signOut();
+  }
+
+  watchSession(_onChange: (session: AuthSession | null) => void): () => void {
+    // Mock session is managed synchronously; sign-in/out update the store directly.
+    return () => {};
+  }
+
+  async syncAdminRole(_force?: boolean): Promise<void> {
+    // Mock backend sets role = admin in cloudDb on sign-in.
+  }
+
+  async ensureUserRow(_userId: string, _email: string): Promise<void> {
+    // Mock cloud always has a users row after sign-in.
+  }
+
+  async validateTripCalculation(_payload: import('./types').TripValidationPayload): Promise<void> {
+    // Offline mode trusts the client-side financial model.
   }
 
   async getProfile(userId: string): Promise<UserProfile | null> {
@@ -303,7 +331,7 @@ export class MockBackend implements BackendAdapter {
     }
   }
 
-  async listPlans(): Promise<SubscriptionPlan[]> {
+  async listPlans(_includePlanId?: string): Promise<SubscriptionPlan[]> {
     await this.ready();
     return cloudDb.plans.toArray();
   }
@@ -369,6 +397,19 @@ export class MockBackend implements BackendAdapter {
       freeCalculationsUsed: 0,
     });
     return { checkoutUrl: '' };
+  }
+
+  async cancelSubscription(userId: string): Promise<void> {
+    await this.ready();
+    await cloudDb.users.update(userId, {
+      currentPlan: 'free',
+      subscriptionStatus: 'cancelled',
+      updatedAt: new Date(),
+    });
+  }
+
+  async listCatalog(): Promise<CatalogVehicle[]> {
+    return this.adminListCatalog();
   }
 
   async adminListUsers(): Promise<AdminUserRow[]> {
@@ -558,6 +599,94 @@ export class MockBackend implements BackendAdapter {
         pay.userId,
         'Pago rechazado',
         'No pudimos verificar tu comprobante. Intenta de nuevo.',
+        'system',
+        '/suscripcion',
+      );
+    }
+  }
+
+  // ---- KYC (identity verification) ----
+  async getKyc(userId: string): Promise<KycSubmission | null> {
+    await this.ready();
+    const list = await cloudDb.kycSubmissions.where('userId').equals(userId).toArray();
+    if (!list.length) return null;
+    // Most recent submission wins (a rejected one may have been re-submitted).
+    return list.sort((a, b) => b.submittedAt.localeCompare(a.submittedAt))[0];
+  }
+
+  async submitKyc(input: KycSubmissionInput, files: KycFileUpload[]): Promise<KycSubmission> {
+    await this.ready();
+    const userId = this.session?.user.id;
+    if (!userId) throw new Error('No autenticado');
+    // No real object storage in the mock — embed each document as a data URL.
+    const documents: KycDocuments = {};
+    for (const f of files) {
+      documents[f.key] = await kycFileToDataUrl(f.file);
+    }
+    const submission: KycSubmission = {
+      id: crypto.randomUUID(),
+      userId,
+      subjectType: input.subjectType,
+      personal: input.personal,
+      company: input.company,
+      risk: input.risk,
+      status: 'submitted',
+      documents,
+      submittedAt: new Date().toISOString(),
+    };
+    // Replace any prior submission for this user (re-submit after rejection).
+    await cloudDb.kycSubmissions.where('userId').equals(userId).delete();
+    await cloudDb.kycSubmissions.put(submission);
+    await cloudDb.users.update(userId, { kycStatus: 'submitted', updatedAt: new Date() });
+    return submission;
+  }
+
+  async getKycDocumentUrl(ref: string): Promise<string> {
+    // Mock stores documents inline as data URLs — return them as-is.
+    return ref;
+  }
+
+  async adminListKyc(): Promise<AdminKycRow[]> {
+    await this.ready();
+    const subs = await cloudDb.kycSubmissions.toArray();
+    const rows: AdminKycRow[] = [];
+    for (const s of subs) {
+      const user = await cloudDb.users.get(s.userId);
+      rows.push({ ...s, userName: user?.name, userEmail: user?.email });
+    }
+    return rows.sort((a, b) => {
+      if (a.status === 'submitted' && b.status !== 'submitted') return -1;
+      if (a.status !== 'submitted' && b.status === 'submitted') return 1;
+      return b.submittedAt.localeCompare(a.submittedAt);
+    });
+  }
+
+  async adminReviewKyc(id: string, approve: boolean, reason?: string): Promise<void> {
+    await this.ready();
+    const sub = await cloudDb.kycSubmissions.get(id);
+    if (!sub) return;
+    await cloudDb.kycSubmissions.update(id, {
+      status: approve ? 'verified' : 'rejected',
+      rejectionReason: approve ? undefined : reason,
+      reviewedAt: new Date().toISOString(),
+    });
+    await cloudDb.users.update(sub.userId, {
+      kycStatus: approve ? 'verified' : 'rejected',
+      updatedAt: new Date(),
+    });
+    if (approve) {
+      await this.notify(
+        sub.userId,
+        'Verificación aprobada',
+        'Tu identidad fue verificada. Tu plan ya puede activarse.',
+        'system',
+        '/suscripcion',
+      );
+    } else {
+      await this.notify(
+        sub.userId,
+        'Verificación rechazada',
+        reason || 'No pudimos verificar tu identidad. Revisa tus datos e inténtalo de nuevo.',
         'system',
         '/suscripcion',
       );
@@ -760,13 +889,19 @@ export class MockBackend implements BackendAdapter {
     await cloudDb.payments.put({
       id: crypto.randomUUID(),
       userId: coop.adminId,
+      planId: 'coop',
       amount,
       currency: 'NIO',
       method: 'transfer',
       status: 'confirmed',
       paidAt: new Date().toISOString(),
     });
-    await cloudDb.users.update(coop.adminId, { subscriptionStatus: 'active' });
+    await cloudDb.users.update(coop.adminId, {
+      currentPlan: 'coop',
+      subscriptionStatus: 'active',
+      freeCalculationsUsed: 0,
+      updatedAt: new Date(),
+    });
   }
 
   // ---- Notifications ----
@@ -806,6 +941,21 @@ export class MockBackend implements BackendAdapter {
 
   async deleteNotification(id: string): Promise<void> {
     await cloudDb.notifications.delete(id);
+  }
+
+  subscribeNotifications(
+    userId: string,
+    onUpdate: (items: AppNotification[]) => void,
+  ): () => void {
+    const observable = liveQuery(async () => {
+      await this.ready();
+      const list = await cloudDb.notifications.where('userId').equals(userId).toArray();
+      return list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    });
+    const subscription = observable.subscribe({
+      next: (list) => onUpdate(list),
+    });
+    return () => subscription.unsubscribe();
   }
 
   // ---- Admin: roles ----

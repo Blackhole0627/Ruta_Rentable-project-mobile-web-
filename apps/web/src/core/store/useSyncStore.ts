@@ -17,6 +17,9 @@ interface SyncState {
   sync: () => Promise<void>;
 }
 
+let syncInFlight: Promise<void> | null = null;
+const MIN_SYNC_GAP_MS = 30_000;
+
 async function reloadAllStores(): Promise<void> {
   await Promise.all([
     useUserStore.getState().loadUser(),
@@ -35,16 +38,26 @@ export const useSyncStore = create<SyncState>((set, get) => ({
   sync: async () => {
     const userId = get().userId;
     if (!userId) return;
-    set({ status: 'syncing', error: null });
-    try {
-      await syncNow(userId);
-      await reloadAllStores();
-      set({ status: 'done', lastSyncedAt: Date.now() });
-    } catch (err) {
-      set({
-        status: 'error',
-        error: err instanceof Error ? err.message : 'Error de sincronización',
-      });
-    }
+    const last = get().lastSyncedAt;
+    if (last && Date.now() - last < MIN_SYNC_GAP_MS) return;
+    if (syncInFlight) return syncInFlight;
+
+    syncInFlight = (async () => {
+      set({ status: 'syncing', error: null });
+      try {
+        await syncNow(userId);
+        await reloadAllStores();
+        set({ status: 'done', lastSyncedAt: Date.now() });
+      } catch (err) {
+        set({
+          status: 'error',
+          error: err instanceof Error ? err.message : 'Error de sincronización',
+        });
+      } finally {
+        syncInFlight = null;
+      }
+    })();
+
+    return syncInFlight;
   },
 }));

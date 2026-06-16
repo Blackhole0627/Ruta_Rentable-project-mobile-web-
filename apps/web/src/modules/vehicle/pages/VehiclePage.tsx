@@ -8,11 +8,12 @@ import { Label } from '@/shared/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
 import { getCatalogByType, findCatalogVehicle } from '@/core/constants/catalog';
+import { useCatalogStore } from '@/core/store/useCatalogStore';
 import { calculateCostPerKm } from '@/core/financial-model/costPerKm';
 import { DEFAULT_PARAMS } from '@/core/constants/defaultParams';
 import { formatCurrency } from '@/shared/utils/currency';
 import { useUserStore } from '@/core/store/useUserStore';
-import type { UnitType, UserVehicle } from '@shared/types/vehicle.types';
+import type { UnitType, UserVehicle, CatalogVehicle } from '@shared/types/vehicle.types';
 import type { SettingsRecord } from '@/core/db/schema';
 import { LoadingSkeleton } from '@/shared/components/LoadingSkeleton';
 import { SearchableSelect } from '@/shared/components/ui/searchable-select';
@@ -23,7 +24,8 @@ import { CostBreakdownChart } from '../components/CostBreakdownChart';
 import { useI18n } from '@/core/i18n/i18n';
 import { toast } from '@/core/store/useToastStore';
 import { errMessage } from '@/shared/utils/errorMessage';
-import { hasCapability } from '@/core/subscription/planAccess';
+import { useHasCapability } from '@/shared/hooks/useHasCapability';
+import { planForCapability } from '@/core/subscription/planAccess';
 
 /** Numeric field with a driver-friendly hint (FR-VEH-03 tooltips). */
 function NumberField({
@@ -59,16 +61,18 @@ export function VehiclePage() {
   const { vehicles, vehicle, loadVehicles, saveVehicle, setActiveVehicle, deleteVehicle, isLoading } =
     useVehicleStore();
   const { settings, loadSettings } = useSettingsStore();
+  const { items: catalogItems, load: loadCatalog } = useCatalogStore();
   const { user } = useUserStore();
   const { t } = useI18n();
   const [override, setOverride] = useState<EditTarget | null>(null);
   const [pendingDelete, setPendingDelete] = useState<UserVehicle | null>(null);
-  const canAddMore = hasCapability(user, 'multiVehicle');
+  const canAddMore = useHasCapability('multiVehicle');
 
   useEffect(() => {
     loadVehicles();
     loadSettings();
-  }, [loadVehicles, loadSettings]);
+    loadCatalog();
+  }, [loadVehicles, loadSettings, loadCatalog]);
 
   // Derive the edit target from the store — no prop→state syncing effect needed.
   const target: EditTarget =
@@ -155,7 +159,8 @@ export function VehiclePage() {
               className="w-full press"
               onClick={() => navigate('/suscripcion')}
             >
-              <AppIcons.lock size={18} /> {t('Agregar otro vehículo (Pro)')}
+              <AppIcons.lock size={18} />{' '}
+              {t('Agregar otro vehículo ({plan})', { plan: planForCapability('multiVehicle') })}
             </Button>
           )}
         </div>
@@ -167,6 +172,7 @@ export function VehiclePage() {
         isNew={target.mode === 'new'}
         settings={settings}
         currency={user?.currency ?? 'NIO'}
+        catalog={catalogItems}
         onSave={async (v) => {
           await saveVehicle(v);
           setOverride({ mode: 'edit', id: v.id });
@@ -204,12 +210,14 @@ function VehicleEditor({
   isNew,
   settings,
   currency,
+  catalog,
   onSave,
 }: {
   seed: UserVehicle | null;
   isNew: boolean;
   settings: SettingsRecord | null;
   currency: 'NIO' | 'USD';
+  catalog: CatalogVehicle[];
   onSave: (v: UserVehicle) => void;
 }) {
   const [unitType, setUnitType] = useState<UnitType>(seed?.unitType ?? 'car');
@@ -220,8 +228,8 @@ function VehicleEditor({
 
   const set = (patch: Partial<UserVehicle>) => setForm((f) => ({ ...f, ...patch }));
 
-  const catalog = getCatalogByType(unitType);
-  const catalogOptions = catalog.map((v) => ({
+  const catalogForType = getCatalogByType(unitType, catalog);
+  const catalogOptions = catalogForType.map((v) => ({
     value: v.id,
     label: `${v.make} ${v.model}`,
     description: `${v.estKmPerLiter} km/L · ${v.fuelType === 'gasoline' ? t('Gasolina') : v.fuelType === 'diesel' ? t('Diésel') : t('Eléctrico')}`,
@@ -231,7 +239,7 @@ function VehicleEditor({
 
   const handleCatalogSelect = (id: string) => {
     setCatalogId(id);
-    const item = findCatalogVehicle(id);
+    const item = findCatalogVehicle(id, catalog);
     if (item) {
       setForm((f) => ({
         ...f,
@@ -265,7 +273,7 @@ function VehicleEditor({
       vehicleValue: Number(form.vehicleValue) || defaults.vehicleValueNIO,
       usefulLifeKm: Number(form.usefulLifeKm) || defaults.usefulLifeKm,
       monthlyFixedCosts: Number(form.monthlyFixedCosts) || defaults.monthlyFixedCostsNIO,
-      isActive: true,
+      isActive: seed?.isActive ?? true,
       createdAt: seed?.createdAt ?? now,
       updatedAt: now,
     };

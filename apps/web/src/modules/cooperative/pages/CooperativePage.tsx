@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCooperativeStore } from '@/core/store/useCooperativeStore';
+import { useSubscriptionStore } from '@/core/store/useSubscriptionStore';
 import { useUserStore } from '@/core/store/useUserStore';
 import { useAuthStore } from '@/core/store/useAuthStore';
+import { BankTransferForm } from '@/modules/subscription/components/BankTransferForm';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
@@ -37,7 +39,10 @@ export function CooperativePage() {
     respondToInvite,
     leave,
     updateParams,
+    payGroup,
   } = useCooperativeStore();
+  const { plans, submitReceipt, load: loadSubscription } = useSubscriptionStore();
+  const { isMock } = useAuthStore();
   const { t } = useI18n();
   const [name, setName] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
@@ -49,7 +54,10 @@ export function CooperativePage() {
   );
 
   useEffect(() => {
-    if (status === 'authenticated') load();
+    if (status === 'authenticated') {
+      load();
+      useSubscriptionStore.getState().load();
+    }
   }, [status, load]);
 
   if (status !== 'authenticated') {
@@ -71,6 +79,8 @@ export function CooperativePage() {
   if (isLoading && !coop) return <LoadingSkeleton variant="page" />;
 
   const currency = user?.currency ?? 'NIO';
+  const coopPlan = plans.find((p) => p.id === 'coop');
+  const coopPrice = coopPlan?.priceNio ?? 0;
 
   // ---- No cooperative yet: create flow (open to any signed-in user) ----
   if (!coop) {
@@ -408,29 +418,81 @@ export function CooperativePage() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">{t('Suscripción de la flota')}</CardTitle>
+              <CardTitle className="text-base">{t('Facturación en grupo')}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-4">
               {coop.subscriptionActive ? (
                 <p className="flex items-center gap-2 text-sm font-medium text-brand-700">
                   <AppIcons.check size={16} />{' '}
                   {t('Plan Cooperativa activo. Toda tu flota tiene premium.')}
                 </p>
               ) : (
-                <p className="text-sm text-road-600">
-                  {t('Compra el plan Cooperativa para activar a toda tu flota (hasta {max} conductores).', { max: MAX_COOP_DRIVERS })}
-                </p>
+                <>
+                  <p className="text-sm text-road-600">
+                    {t(
+                      'Compra el plan Cooperativa para activar a toda tu flota (hasta {max} conductores).',
+                      { max: MAX_COOP_DRIVERS },
+                    )}
+                  </p>
+                  <Button
+                    className="press w-full"
+                    onClick={() => navigate('/suscripcion')}
+                  >
+                    <AppIcons.crown size={18} /> {t('Pagar con tarjeta')}
+                  </Button>
+                  <BankTransferForm
+                    amount={coopPrice}
+                    currency={currency}
+                    disabled={working}
+                    onSubmit={async (receiptUrl) => {
+                      setWorking(true);
+                      try {
+                        await submitReceipt('coop', receiptUrl);
+                        await loadSubscription();
+                        toast.success(t('Comprobante en revisión'));
+                      } catch (err) {
+                        toast.error(errMessage(err, t('No pudimos enviar el comprobante. Intenta de nuevo.')));
+                      } finally {
+                        setWorking(false);
+                      }
+                    }}
+                  />
+                  {isMock && (
+                    <>
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        disabled={working}
+                        onClick={async () => {
+                          setWorking(true);
+                          try {
+                            await payGroup(coopPrice);
+                            toast.success(t('Pago registrado ✓'));
+                          } catch (err) {
+                            toast.error(errMessage(err, t('No se pudo registrar el pago.')));
+                          } finally {
+                            setWorking(false);
+                          }
+                        }}
+                      >
+                        {t('Pagar por la flota')}
+                      </Button>
+                      <p className="text-center text-xs text-road-400">
+                        {t('Pago simulado (un solo pago por toda la flota).')}
+                      </p>
+                    </>
+                  )}
+                </>
               )}
-              <Button
-                className="press w-full"
-                variant={coop.subscriptionActive ? 'outline' : 'default'}
-                onClick={() => navigate('/suscripcion')}
-              >
-                <AppIcons.crown size={18} />
-                {coop.subscriptionActive
-                  ? t('Gestionar suscripción')
-                  : t('Comprar plan Cooperativa')}
-              </Button>
+              {coop.subscriptionActive && (
+                <Button
+                  className="press w-full"
+                  variant="outline"
+                  onClick={() => navigate('/suscripcion')}
+                >
+                  <AppIcons.crown size={18} /> {t('Gestionar suscripción')}
+                </Button>
+              )}
             </CardContent>
           </Card>
         </>

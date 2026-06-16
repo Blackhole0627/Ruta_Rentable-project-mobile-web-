@@ -32,3 +32,24 @@ export async function fileToCompressedDataUrl(
   ctx.drawImage(img, 0, 0, w, h);
   return canvas.toDataURL('image/jpeg', quality);
 }
+
+/** Reads any File into a base64 data URL (no transformation). Used for PDFs. */
+export function fileToDataUrl(file: File): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error('No se pudo leer el archivo.'));
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * Turns an uploaded KYC document into a self-contained data URL: images are
+ * downscaled/compressed (kept legible for manual review), everything else
+ * (e.g. PDFs) is embedded as-is. Used by the offline mock, which has no real
+ * object storage.
+ */
+export function kycFileToDataUrl(file: File): Promise<string> {
+  if (file.type.startsWith('image/')) return fileToCompressedDataUrl(file, 1600, 0.75);
+  return fileToDataUrl(file);
+}

@@ -31,6 +31,7 @@ export function LoginPage() {
     devCode,
     error,
     clearError,
+    status,
   } = useAuthStore();
   const { t } = useI18n();
 
@@ -54,6 +55,14 @@ export function LoginPage() {
     const role = useAuthStore.getState().session?.user.role;
     navigate(role === 'admin' ? '/admin' : '/', { replace: true });
   };
+
+  // Leave the login screen the instant authentication succeeds — covers every
+  // path (password, OTP, signup, Google return) and is resilient to a failed
+  // post-auth sync, since the session/status flips before that runs.
+  useEffect(() => {
+    if (status === 'authenticated') gotoHome();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
 
   const startCooldown = () => setCooldown(RESEND_COOLDOWN);
 

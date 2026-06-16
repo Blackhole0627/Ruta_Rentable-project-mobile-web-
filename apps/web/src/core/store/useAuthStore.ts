@@ -3,6 +3,9 @@ import type { AuthSession } from '@shared/types/auth.types';
 import { getBackend } from '../backend';
 import { db } from '../db/db';
 import { useSyncStore } from './useSyncStore';
+import { useSubscriptionStore } from './useSubscriptionStore';
+import { useCooperativeStore } from './useCooperativeStore';
+import { useNotificationStore } from './useNotificationStore';
 
 type AuthStatus = 'unknown' | 'authenticated' | 'anonymous';
 
@@ -34,10 +37,36 @@ interface AuthState {
 
 const backend = getBackend();
 
-/** After authentication, run a sync and refresh derived stores. */
-async function syncAfterAuth(userId: string): Promise<void> {
+let unwatchSession: (() => void) | null = null;
+
+/** After authentication, run a sync and refresh derived stores (drivers only). */
+async function syncAfterAuth(
+  userId: string,
+  role?: AuthSession['user']['role'],
+  email?: string,
+): Promise<void> {
   useSyncStore.getState().setUserId(userId);
-  await useSyncStore.getState().sync();
+  // A post-auth sync hiccup (RLS, offline, transient network) must NOT make
+  // sign-in look like it failed: the session is already set, so swallow errors
+  // here and let the next sync/focus catch up. Otherwise the caller's catch
+  // returns false and the user is stranded on the login screen.
+  try {
+    if (email) await backend.ensureUserRow(userId, email);
+    await backend.syncAdminRole();
+    if (role === 'admin') return;
+    await useSyncStore.getState().sync();
+    refreshDerivedStores();
+  } catch (err) {
+    console.warn('[auth] post-auth sync failed (non-fatal):', err);
+  }
+}
+
+/** Refresh plan/coop state — skipped for admin sessions (admin panel is separate). */
+function refreshDerivedStores(role?: AuthSession['user']['role']): void {
+  if (role === 'admin') return;
+  void useSubscriptionStore.getState().load();
+  void useCooperativeStore.getState().load();
+  void useNotificationStore.getState().load();
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -51,7 +80,25 @@ export const useAuthStore = create<AuthState>((set) => ({
   init: async () => {
     const session = await backend.getSession();
     set({ session, status: session ? 'authenticated' : 'anonymous' });
-    if (session) await syncAfterAuth(session.user.id);
+    if (session) await syncAfterAuth(session.user.id, session.user.role, session.user.email);
+
+    if (!unwatchSession) {
+      let lastUserId = session?.user.id ?? null;
+      unwatchSession = backend.watchSession(async (next) => {
+        set({ session: next, status: next ? 'authenticated' : 'anonymous' });
+        if (next) {
+          if (next.user.id !== lastUserId) {
+            lastUserId = next.user.id;
+            await syncAfterAuth(next.user.id, next.user.role, next.user.email);
+          }
+          // Token refresh updates the session only — no background data reload.
+        } else {
+          lastUserId = null;
+          useSyncStore.getState().setUserId(null);
+          useNotificationStore.getState().stopRealtime();
+        }
+      });
+    }
   },
 
   requestOtp: async (email) => {
@@ -71,7 +118,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const session = await backend.verifyOtp(email, token, purpose);
       set({ session, status: 'authenticated', devCode: null });
-      await syncAfterAuth(session.user.id);
+      await syncAfterAuth(session.user.id, session.user.role, session.user.email);
       // Best-effort welcome email once a brand-new account is confirmed.
       if (purpose === 'signup') void backend.sendWelcomeEmail().catch(() => {});
       return true;
@@ -88,7 +135,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const session = await backend.signInWithPassword(email, password);
       set({ session, status: 'authenticated', devCode: null });
-      await syncAfterAuth(session.user.id);
+      await syncAfterAuth(session.user.id, session.user.role, session.user.email);
       return true;
     } catch (err) {
       set({ error: err instanceof Error ? err.message : 'Correo o contraseña incorrectos' });
@@ -104,7 +151,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       const session = await backend.signUp(name, email, password);
       if (session) {
         set({ session, status: 'authenticated', devCode: null });
-        await syncAfterAuth(session.user.id);
+        await syncAfterAuth(session.user.id, session.user.role, session.user.email);
         return 'done';
       }
       return 'otp'; // email confirmation required → verify a code next
@@ -150,7 +197,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (session) {
         // Mock backend returns a session immediately.
         set({ session, status: 'authenticated', devCode: null });
-        await syncAfterAuth(session.user.id);
+        await syncAfterAuth(session.user.id, session.user.role, session.user.email);
         return true;
       }
       // Real backend redirects to Google; session is handled on return via init().

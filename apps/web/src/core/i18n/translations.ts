@@ -338,6 +338,11 @@ export const EN: Record<string, string> = {
   'Enviar para revisión': 'Submit for review',
   'El administrador revisará tu pago y activará tu cuenta.':
     'The admin will review your payment and activate your account.',
+  'No pudimos enviar el comprobante. Intenta de nuevo.':
+    'We could not submit your receipt. Please try again.',
+  'No se pudo registrar el pago.': 'Could not record the payment.',
+  'No se pudo copiar': 'Could not copy',
+  'No se pudo validar el cálculo.': 'Could not validate the calculation.',
   Pagos: 'Payments',
   'Todos los planes': 'All plans',
   Limpiar: 'Clear',
@@ -345,6 +350,8 @@ export const EN: Record<string, string> = {
   '¿Confirmar cancelación?': 'Confirm cancellation?',
   'Cancela tu plan actual primero': 'Cancel your current plan first',
   'Sin plan': 'No plan',
+  Gratis: 'Free',
+  'Plan de pago': 'Paid plan',
   '{n} pendientes de revisión': '{n} pending review',
   'Sin pagos todavía': 'No payments yet',
   Aprobar: 'Approve',
@@ -559,6 +566,7 @@ export const EN: Record<string, string> = {
   'Mejora tu plan para ver ingresos, ganancias y gráficos de tus viajes.':
     'Upgrade your plan to see your income, profit and trip charts.',
   'Agregar otro vehículo (Pro)': 'Add another vehicle (Pro)',
+  'Agregar otro vehículo ({plan})': 'Add another vehicle ({plan})',
   'Cooperativa es del plan Cooperativa': 'Cooperative is part of the Cooperativa plan',
   'Mejora al plan Cooperativa para administrar tu flota, invitar conductores y ver reportes grupales.':
     'Upgrade to the Cooperativa plan to manage your fleet, invite drivers and see group reports.',
@@ -606,4 +614,96 @@ export const EN: Record<string, string> = {
   'Ingresa km con pasajero y tarifa mayores a 0.':
     'Enter passenger km and fare greater than 0.',
   'No se pudo guardar el plan': 'Could not save the plan',
+
+  // KYC — driver
+  'Verificación de identidad (KYC)': 'Identity verification (KYC)',
+  'Verificación de identidad requerida': 'Identity verification required',
+  'Antes de activar un plan de pago debes verificar tu identidad (KYC).':
+    'Before activating a paid plan you must verify your identity (KYC).',
+  'Verificación en revisión': 'Verification under review',
+  'Recibimos tus documentos. Un administrador los está revisando.':
+    'We received your documents. An admin is reviewing them.',
+  'Identidad verificada': 'Identity verified',
+  'Tu identidad está verificada. Tu plan de pago puede activarse.':
+    'Your identity is verified. Your paid plan can be activated.',
+  'Verificación rechazada': 'Verification rejected',
+  'Motivo: {reason}': 'Reason: {reason}',
+  'No pudimos verificar tu identidad. Corrige tus datos y vuelve a enviar.':
+    "We couldn't verify your identity. Fix your details and submit again.",
+  'Verificar mi identidad': 'Verify my identity',
+  'Reenviar verificación': 'Resubmit verification',
+  'Verificación enviada. Te avisaremos cuando esté lista.':
+    "Verification submitted. We'll let you know when it's ready.",
+  'No pudimos enviar tu verificación. Intenta de nuevo.':
+    "We couldn't submit your verification. Try again.",
+  'Pago recibido — verificación de identidad en revisión.':
+    'Payment received — identity verification under review.',
+  'Verificación rechazada. Reenvía tus documentos para activar tu plan.':
+    'Verification rejected. Resubmit your documents to activate your plan.',
+  'Completa la verificación de identidad para activar tu plan.':
+    'Complete identity verification to activate your plan.',
+  'Tras el pago deberás verificar tu identidad (KYC). Tu plan se activa cuando un administrador la apruebe.':
+    'After payment you must verify your identity (KYC). Your plan activates once an admin approves it.',
+
+  // KYC — form
+  'Por regulación contra el lavado de dinero (UAF), verificamos tu identidad antes de activar un plan de pago. Tus documentos se guardan de forma privada y cifrada.':
+    'Due to anti-money-laundering regulation (UAF), we verify your identity before activating a paid plan. Your documents are stored privately and encrypted.',
+  'Tipo de solicitante': 'Applicant type',
+  'Persona individual': 'Individual',
+  Empresa: 'Company',
+  Próximamente: 'Coming soon',
+  'Datos personales': 'Personal data',
+  'Nombre completo': 'Full name',
+  'Fecha de nacimiento': 'Date of birth',
+  'Selecciona una fecha': 'Select a date',
+  Nacionalidad: 'Nationality',
+  'Número de cédula': 'ID (cédula) number',
+  'Dirección de domicilio': 'Home address',
+  Ocupación: 'Occupation',
+  Documentos: 'Documents',
+  'Cédula (frente)': 'ID card (front)',
+  'Cédula (reverso)': 'ID card (back)',
+  'Licencia de conducir': "Driver's license",
+  'Comprobante de domicilio': 'Proof of address',
+  'Selfie (opcional)': 'Selfie (optional)',
+  Selfie: 'Selfie',
+  'Acta constitutiva': 'Articles of incorporation',
+  'ID del representante legal': 'Legal representative ID',
+  'Subir foto o PDF': 'Upload photo or PDF',
+  'Cambiar archivo': 'Change file',
+  'Abrir PDF': 'Open PDF',
+  'Cuestionario de riesgo': 'Risk questionnaire',
+  'Actividad económica': 'Economic activity',
+  'Ej. transporte de pasajeros': 'e.g. passenger transport',
+  'Origen de los fondos': 'Source of funds',
+  'Ej. ingresos por viajes': 'e.g. income from trips',
+  'Volumen mensual estimado': 'Estimated monthly volume',
+  'Ej. C$ 20,000 - 40,000': 'e.g. C$ 20,000 - 40,000',
+  '¿Eres una Persona Expuesta Políticamente (PEP)?':
+    'Are you a Politically Exposed Person (PEP)?',
+  'Cargos públicos o relación cercana con uno.':
+    'Public office or close relationship with someone in one.',
+  PEP: 'PEP',
+  'Enviar para verificación': 'Submit for verification',
+  'Un administrador revisará tu información. Te avisaremos cuando esté lista.':
+    "An admin will review your information. We'll notify you when it's ready.",
+  'El archivo supera el tamaño máximo (8 MB).':
+    'The file exceeds the maximum size (8 MB).',
+  'Completa todos los campos obligatorios y los documentos.':
+    'Complete all required fields and documents.',
+
+  // KYC — admin
+  'Verificación KYC': 'KYC verification',
+  'Todos los estados': 'All statuses',
+  Verificado: 'Verified',
+  'Sin enviar': 'Not submitted',
+  'Sin solicitudes todavía': 'No requests yet',
+  Revisar: 'Review',
+  'Solicitud de verificación': 'Verification request',
+  'Verificación aprobada': 'Verification approved',
+  'Indica el motivo del rechazo.': 'Provide the rejection reason.',
+  'Motivo del rechazo': 'Rejection reason',
+  'Confirmar rechazo': 'Confirm rejection',
+  Sí: 'Yes',
+  No: 'No',
 };

@@ -8,6 +8,7 @@ import {
   endOfWeek,
   eachDayOfInterval,
   addMonths,
+  addYears,
   isSameMonth,
   isSameDay,
 } from 'date-fns';
@@ -86,25 +87,45 @@ export function DatePicker({ value, onChange, placeholder, className }: DatePick
             )}
           >
             <div className="mb-2 flex items-center justify-between">
-              <button
-                type="button"
-                onClick={() => setView((v) => addMonths(v, -1))}
-                className="rounded-lg p-1.5 hover:bg-road-100"
-                aria-label="<"
-              >
-                <AppIcons.chevronLeft size={18} />
-              </button>
+              <div className="flex items-center">
+                <button
+                  type="button"
+                  onClick={() => setView((v) => addYears(v, -1))}
+                  className="rounded-lg p-1.5 hover:bg-road-100"
+                  aria-label="<<"
+                >
+                  <AppIcons.chevronsLeft size={18} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setView((v) => addMonths(v, -1))}
+                  className="rounded-lg p-1.5 hover:bg-road-100"
+                  aria-label="<"
+                >
+                  <AppIcons.chevronLeft size={18} />
+                </button>
+              </div>
               <span className="text-sm font-semibold capitalize">
                 {format(view, 'MMMM yyyy', { locale })}
               </span>
-              <button
-                type="button"
-                onClick={() => setView((v) => addMonths(v, 1))}
-                className="rounded-lg p-1.5 hover:bg-road-100"
-                aria-label=">"
-              >
-                <AppIcons.chevronRight size={18} />
-              </button>
+              <div className="flex items-center">
+                <button
+                  type="button"
+                  onClick={() => setView((v) => addMonths(v, 1))}
+                  className="rounded-lg p-1.5 hover:bg-road-100"
+                  aria-label=">"
+                >
+                  <AppIcons.chevronRight size={18} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setView((v) => addYears(v, 1))}
+                  className="rounded-lg p-1.5 hover:bg-road-100"
+                  aria-label=">>"
+                >
+                  <AppIcons.chevronsRight size={18} />
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-7 gap-0.5 text-center text-[11px] font-medium text-road-400">

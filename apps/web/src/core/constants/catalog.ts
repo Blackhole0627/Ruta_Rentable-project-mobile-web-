@@ -26,10 +26,10 @@ const motorcycles: CatalogVehicle[] = (motoSeed as MotoSeed[]).map((v, i) => ({
 
 export const VEHICLE_CATALOG: CatalogVehicle[] = [...cars, ...motorcycles];
 
-export function getCatalogByType(type: 'car' | 'motorcycle') {
-  return VEHICLE_CATALOG.filter((v) => v.type === type);
+export function getCatalogByType(type: 'car' | 'motorcycle', catalog = VEHICLE_CATALOG) {
+  return catalog.filter((v) => v.type === type);
 }
 
-export function findCatalogVehicle(id: string) {
-  return VEHICLE_CATALOG.find((v) => v.id === id);
+export function findCatalogVehicle(id: string, catalog = VEHICLE_CATALOG) {
+  return catalog.find((v) => v.id === id);
 }

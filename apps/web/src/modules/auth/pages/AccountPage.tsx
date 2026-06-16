@@ -8,7 +8,7 @@ import { Label } from '@/shared/components/ui/label';
 import { PasswordInput } from '@/shared/components/ui/password-input';
 import { useAuthStore } from '@/core/store/useAuthStore';
 import { toast } from '@/core/store/useToastStore';
-import { hasCapability } from '@/core/subscription/planAccess';
+import { hasCapability, planDisplayName } from '@/core/subscription/planAccess';
 import { useSyncStore } from '@/core/store/useSyncStore';
 import { useUserStore } from '@/core/store/useUserStore';
 import { useSubscriptionStore } from '@/core/store/useSubscriptionStore';
@@ -59,9 +59,7 @@ export function AccountPage() {
   }, [plans.length, loadPlans]);
 
   const planId = user?.currentPlan ?? 'free';
-  const planLabel =
-    plans.find((p) => p.id === planId)?.name ??
-    (planId === 'free' ? t('Gratis') : planId);
+  const planLabel = planDisplayName(planId, plans, t);
 
   if (status !== 'authenticated' || !session) {
     return (

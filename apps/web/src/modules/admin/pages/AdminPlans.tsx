@@ -14,9 +14,23 @@ import { AppIcons } from '@/shared/constants/icons';
 import { useI18n } from '@/core/i18n/i18n';
 import { toast } from '@/core/store/useToastStore';
 import { errMessage } from '@/shared/utils/errorMessage';
-import { ALL_CAPABILITIES, type Capability } from '@/core/subscription/planAccess';
+import {
+  ALL_CAPABILITIES,
+  defaultCapabilitiesFor,
+  type Capability,
+} from '@/core/subscription/planAccess';
 
 const backend = getBackend();
+
+function planSlugFromName(name: string): string {
+  const slug = name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+  return slug || `plan-${Date.now()}`;
+}
 
 /** Admin-facing labels for each feature flag a plan can unlock. */
 const CAP_LABELS: Record<Capability, string> = {
@@ -33,7 +47,14 @@ export function AdminPlans() {
   const [plans, setPlans] = useState<SubscriptionPlan[] | null>(null);
   const [editing, setEditing] = useState<SubscriptionPlan | null>(null);
 
-  const reload = () => backend.adminListPlans().then(setPlans);
+  const reload = () =>
+    backend
+      .adminListPlans()
+      .then(setPlans)
+      .catch((err) => {
+        setPlans([]);
+        toast.error(errMessage(err, t('No se pudieron cargar los planes')));
+      });
   useEffect(() => {
     reload();
   }, []);
@@ -42,7 +63,7 @@ export function AdminPlans() {
 
   const startNew = () =>
     setEditing({
-      id: crypto.randomUUID(),
+      id: '',
       name: '',
       priceNio: 0,
       priceUsd: 0,
@@ -98,7 +119,8 @@ export function AdminPlans() {
         onClose={() => setEditing(null)}
         onSave={async (p) => {
           try {
-            await backend.adminUpsertPlan(p);
+            const toSave = p.id ? p : { ...p, id: planSlugFromName(p.name) };
+            await backend.adminUpsertPlan(toSave);
             await reload();
             setEditing(null);
             toast.success(t('Plan guardado'));
@@ -121,10 +143,23 @@ function PlanEditor({
   onSave: (p: SubscriptionPlan) => void;
 }) {
   const { t } = useI18n();
-  const [draft, setDraft] = useState<SubscriptionPlan | null>(plan);
-  const [featuresText, setFeaturesText] = useState(() =>
-    (plan?.features ?? []).join('\n'),
-  );
+  const [draft, setDraft] = useState<SubscriptionPlan | null>(null);
+  const [featuresText, setFeaturesText] = useState('');
+
+  useEffect(() => {
+    if (!plan) {
+      setDraft(null);
+      return;
+    }
+    setDraft({
+      ...plan,
+      capabilities:
+        plan.capabilities && plan.capabilities.length > 0
+          ? plan.capabilities
+          : defaultCapabilitiesFor(plan.id),
+    });
+    setFeaturesText((plan.features ?? []).join('\n'));
+  }, [plan]);
 
   if (!draft) return null;
 

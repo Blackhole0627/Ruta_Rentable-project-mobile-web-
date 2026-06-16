@@ -9,6 +9,7 @@ import type {
 import { getBackend } from '../backend';
 import { useUserStore } from './useUserStore';
 import { useAuthStore } from './useAuthStore';
+import { useSubscriptionStore } from './useSubscriptionStore';
 import { errMessage } from '@/shared/utils/errorMessage';
 
 /**
@@ -148,6 +149,14 @@ export const useCooperativeStore = create<CooperativeState>((set, get) => ({
   payGroup: async (amount) => {
     const { coop } = get();
     if (!coop) return;
-    await backend.recordGroupPayment(coop.id, amount);
+    set({ error: null });
+    try {
+      await backend.recordGroupPayment(coop.id, amount);
+      await useSubscriptionStore.getState().load();
+      await get().load();
+    } catch (err) {
+      set({ error: errMessage(err, 'No se pudo registrar el pago.') });
+      throw err;
+    }
   },
 }));

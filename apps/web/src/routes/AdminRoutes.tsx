@@ -5,6 +5,7 @@ import { AdminDashboard } from '@/modules/admin/pages/AdminDashboard';
 import { AdminUsers } from '@/modules/admin/pages/AdminUsers';
 import { AdminPlans } from '@/modules/admin/pages/AdminPlans';
 import { AdminPayments } from '@/modules/admin/pages/AdminPayments';
+import { AdminKyc } from '@/modules/admin/pages/AdminKyc';
 import { AdminParameters } from '@/modules/admin/pages/AdminParameters';
 import { AdminCatalog } from '@/modules/admin/pages/AdminCatalog';
 import { AdminAnnouncements } from '@/modules/admin/pages/AdminAnnouncements';
@@ -23,6 +24,7 @@ export function AdminRoutes() {
         <Route path="usuarios" element={<AdminUsers />} />
         <Route path="planes" element={<AdminPlans />} />
         <Route path="pagos" element={<AdminPayments />} />
+        <Route path="kyc" element={<AdminKyc />} />
         <Route path="parametros" element={<AdminParameters />} />
         <Route path="catalogo" element={<AdminCatalog />} />
         <Route path="anuncios" element={<AdminAnnouncements />} />
