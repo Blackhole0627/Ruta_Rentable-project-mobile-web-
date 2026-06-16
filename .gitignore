@@ -27,3 +27,6 @@ requirement(yamamoto) (1).docx
 # at build time (apps/web/src/core/constants/catalog.ts), so removing them
 # breaks the Vercel build. Edge Functions under supabase/functions also stay.
 supabase/migrations/
+
+# LAFISE API docs — contains real credentials, keep local only
+docs/lafise docs.txt
