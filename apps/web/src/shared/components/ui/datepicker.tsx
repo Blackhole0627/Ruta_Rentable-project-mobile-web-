@@ -69,7 +69,7 @@ export function DatePicker({ value, onChange, placeholder, className }: DatePick
       <button
         type="button"
         onClick={toggle}
-        className="flex h-11 w-full items-center justify-between gap-2 rounded-lg border border-road-300 bg-white px-3 py-2 text-left text-base hover:border-road-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+        className="flex h-10 w-full items-center justify-between gap-2 rounded-xl border border-road-200 bg-white px-3 py-2 text-left text-base shadow-sm transition-shadow hover:border-road-300 focus-visible:border-brand-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15"
       >
         <span className={cn('truncate', !selected && 'text-road-400')}>
           {selected ? format(selected, 'd MMM yyyy', { locale }) : (placeholder ?? '—')}
@@ -82,7 +82,7 @@ export function DatePicker({ value, onChange, placeholder, className }: DatePick
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} role="presentation" />
           <div
             className={cn(
-              'absolute z-50 mt-1 w-72 max-w-[calc(100vw-1rem)] rounded-xl border border-road-200 bg-white p-3 shadow-xl',
+              'animate-slide-up-in absolute z-50 mt-2 w-72 max-w-[calc(100vw-1rem)] rounded-2xl bg-white p-3 shadow-card-lg ring-1 ring-road-100',
               alignRight ? 'right-0' : 'left-0',
             )}
           >
@@ -91,7 +91,7 @@ export function DatePicker({ value, onChange, placeholder, className }: DatePick
                 <button
                   type="button"
                   onClick={() => setView((v) => addYears(v, -1))}
-                  className="rounded-lg p-1.5 hover:bg-road-100"
+                  className="rounded-lg p-1.5 text-road-500 transition-colors hover:bg-road-100 hover:text-road-700"
                   aria-label="<<"
                 >
                   <AppIcons.chevronsLeft size={18} />
@@ -99,7 +99,7 @@ export function DatePicker({ value, onChange, placeholder, className }: DatePick
                 <button
                   type="button"
                   onClick={() => setView((v) => addMonths(v, -1))}
-                  className="rounded-lg p-1.5 hover:bg-road-100"
+                  className="rounded-lg p-1.5 text-road-500 transition-colors hover:bg-road-100 hover:text-road-700"
                   aria-label="<"
                 >
                   <AppIcons.chevronLeft size={18} />
@@ -112,7 +112,7 @@ export function DatePicker({ value, onChange, placeholder, className }: DatePick
                 <button
                   type="button"
                   onClick={() => setView((v) => addMonths(v, 1))}
-                  className="rounded-lg p-1.5 hover:bg-road-100"
+                  className="rounded-lg p-1.5 text-road-500 transition-colors hover:bg-road-100 hover:text-road-700"
                   aria-label=">"
                 >
                   <AppIcons.chevronRight size={18} />
@@ -120,7 +120,7 @@ export function DatePicker({ value, onChange, placeholder, className }: DatePick
                 <button
                   type="button"
                   onClick={() => setView((v) => addYears(v, 1))}
-                  className="rounded-lg p-1.5 hover:bg-road-100"
+                  className="rounded-lg p-1.5 text-road-500 transition-colors hover:bg-road-100 hover:text-road-700"
                   aria-label=">>"
                 >
                   <AppIcons.chevronsRight size={18} />
@@ -150,12 +150,12 @@ export function DatePicker({ value, onChange, placeholder, className }: DatePick
                       setOpen(false);
                     }}
                     className={cn(
-                      'flex h-9 items-center justify-center rounded-lg text-sm',
+                      'flex h-9 items-center justify-center rounded-lg text-sm transition-colors',
                       !inMonth && 'text-road-300',
                       isSel
-                        ? 'bg-brand-500 font-bold text-white'
+                        ? 'bg-brand-grad font-bold text-white shadow-brand'
                         : 'hover:bg-road-100',
-                      !isSel && isTod && 'font-bold text-brand-600',
+                      !isSel && isTod && 'font-bold text-brand-600 ring-1 ring-inset ring-brand-200',
                     )}
                   >
                     {format(d, 'd')}
@@ -171,7 +171,7 @@ export function DatePicker({ value, onChange, placeholder, className }: DatePick
                   onChange('');
                   setOpen(false);
                 }}
-                className="mt-2 w-full text-center text-xs text-road-500 underline"
+                className="mt-2 w-full rounded-lg py-1.5 text-center text-xs font-medium text-road-500 transition-colors hover:bg-road-50 hover:text-road-700"
               >
                 {t('Limpiar')}
               </button>

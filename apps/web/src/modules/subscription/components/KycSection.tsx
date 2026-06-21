@@ -32,10 +32,10 @@ export function KycSection() {
   const status: KycStatus = submission?.status ?? user?.kycStatus ?? 'none';
 
   const styles: Record<KycStatus, string> = {
-    none: 'border-amber-300 bg-amber-50 text-amber-800',
-    submitted: 'border-amber-300 bg-amber-50 text-amber-800',
-    verified: 'border-brand-300 bg-brand-50 text-brand-800',
-    rejected: 'border-danger-500/40 bg-red-50 text-danger-600',
+    none: 'ring-amber-200 bg-amber-50 text-amber-800',
+    submitted: 'ring-amber-200 bg-amber-50 text-amber-800',
+    verified: 'ring-brand-200 bg-brand-50 text-brand-800',
+    rejected: 'ring-danger-100 bg-danger-50 text-danger-700',
   };
 
   const meta: Record<KycStatus, { icon: LucideIcon; title: string; body: string }> = {
@@ -80,18 +80,21 @@ export function KycSection() {
   };
 
   return (
-    <Card>
-      <CardContent className="space-y-3 pt-4">
-        <h3 className="flex items-center gap-2 text-base font-semibold">
+    <Card className="ring-1 ring-road-100">
+      <CardContent className="space-y-2 p-3.5">
+        <h3 className="flex items-center gap-2 text-base font-bold text-road-900">
           <AppIcons.shieldCheck size={18} className="text-brand-600" />
           {t('Verificación de identidad (KYC)')}
         </h3>
         <div
-          className={cn('flex items-start gap-2 rounded-lg border px-3 py-2.5 text-sm', styles[status])}
+          className={cn(
+            'flex items-start gap-2.5 rounded-2xl px-3.5 py-2.5 text-sm ring-1',
+            styles[status],
+          )}
         >
-          <Icon size={18} className="mt-0.5 shrink-0" />
+          <Icon size={20} className="mt-0.5 shrink-0" />
           <div>
-            <p className="font-medium">{m.title}</p>
+            <p className="font-semibold">{m.title}</p>
             <p className="text-xs opacity-90">{m.body}</p>
           </div>
         </div>

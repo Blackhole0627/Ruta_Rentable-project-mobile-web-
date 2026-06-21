@@ -2,14 +2,15 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/shared/utils/cn';
 
 const badgeVariants = cva(
-  'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors',
+  'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset transition-colors',
   {
     variants: {
       variant: {
-        default: 'bg-road-100 text-road-800',
-        profitable: 'bg-brand-100 text-brand-900',
-        acceptable: 'bg-amber-100 text-amber-900',
-        danger: 'bg-red-100 text-red-800',
+        default: 'bg-road-100 text-road-700 ring-road-200',
+        profitable: 'bg-brand-50 text-brand-700 ring-brand-200',
+        acceptable: 'bg-amber-50 text-amber-700 ring-amber-200',
+        danger: 'bg-danger-50 text-danger-700 ring-danger-100',
+        gold: 'bg-gold-100 text-gold-800 ring-gold-200',
       },
     },
     defaultVariants: { variant: 'default' },

@@ -29,47 +29,51 @@ export function ProfitabilityResult({ result, currency }: ProfitabilityResultPro
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2.5">
       <TrafficLight status={result.status} />
-      <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-lg bg-white p-4 text-center shadow-sm">
-          <p className="text-xs text-road-500">{t('Ganancia neta')}</p>
+      <div className="grid grid-cols-2 gap-2.5">
+        <div className="rounded-2xl bg-white p-3 text-center shadow-card ring-1 ring-road-100">
+          <p className="text-xs font-medium text-road-500">{t('Ganancia neta')}</p>
           <p
-            className={`text-2xl font-bold ${result.netProfit >= 0 ? 'text-brand-600' : 'text-danger-500'}`}
+            className={`tabular mt-0.5 text-xl font-extrabold tracking-tight ${result.netProfit >= 0 ? 'text-brand-600' : 'text-danger-500'}`}
           >
             {formatCurrency(result.netProfit, currency)}
           </p>
         </div>
-        <div className="rounded-lg bg-white p-4 text-center shadow-sm">
-          <p className="text-xs text-road-500">{t('Margen')}</p>
-          <p className="text-2xl font-bold text-road-900">{formatPercent(result.margin)}</p>
+        <div className="rounded-2xl bg-white p-3 text-center shadow-card ring-1 ring-road-100">
+          <p className="text-xs font-medium text-road-500">{t('Margen')}</p>
+          <p className="tabular mt-0.5 text-xl font-extrabold tracking-tight text-road-900">
+            {formatPercent(result.margin)}
+          </p>
         </div>
       </div>
       <MinimumFareBadge minimumFare={result.minimumFare} currency={currency} />
       <RecommendationCard status={result.status} />
       <button
         type="button"
-        className="flex w-full items-center justify-between rounded-lg border border-road-200 bg-white px-4 py-3 text-sm font-medium"
+        className="press flex w-full items-center justify-between rounded-2xl border border-road-100 bg-white px-3.5 py-2.5 text-sm font-semibold text-road-700 shadow-card"
         onClick={() => setExpanded(!expanded)}
       >
         {t('Desglose de costos')}
         {expanded ? (
-          <AppIcons.chevronUp {...iconPropsSm} />
+          <AppIcons.chevronUp {...iconPropsSm} className="text-road-400" />
         ) : (
-          <AppIcons.chevronDown {...iconPropsSm} />
+          <AppIcons.chevronDown {...iconPropsSm} className="text-road-400" />
         )}
       </button>
       {expanded && (
-        <div className="space-y-2 rounded-lg bg-white p-4 text-sm">
+        <div className="animate-slide-up-in space-y-2 rounded-2xl bg-white p-3 text-sm shadow-card ring-1 ring-road-100">
           {costs.map((c) => (
             <div key={c.label} className="flex justify-between">
               <span className="text-road-500">{t(c.label)}</span>
-              <span>{formatCurrency(c.value, currency)}</span>
+              <span className="tabular font-medium text-road-800">
+                {formatCurrency(c.value, currency)}
+              </span>
             </div>
           ))}
-          <div className="flex justify-between border-t pt-2 font-semibold">
+          <div className="flex justify-between border-t border-road-100 pt-2.5 font-bold text-road-900">
             <span>{t('Costo total')}</span>
-            <span>{formatCurrency(result.totalTripCost, currency)}</span>
+            <span className="tabular">{formatCurrency(result.totalTripCost, currency)}</span>
           </div>
         </div>
       )}

@@ -34,9 +34,9 @@ import { useI18n } from '@/core/i18n/i18n';
 type Period = 'day' | 'week' | 'month';
 
 const STATUS_COLORS: Record<TripStatus, string> = {
-  profitable: '#22c55e',
+  profitable: '#10b981',
   acceptable: '#f59e0b',
-  not_profitable: '#ef4444',
+  not_profitable: '#f43f5e',
 };
 
 const PERIOD_TO_MONTH: Record<Period, number> = { day: 30, week: 4.345, month: 1 };
@@ -212,8 +212,11 @@ export function ReportsPage() {
   // Reports is a paid feature (Básico+).
   if (!hasCapability(user, 'reports')) {
     return (
-      <div className="space-y-4">
-        <h1 className="text-xl font-bold">{t('Reportes')}</h1>
+      <div className="space-y-3">
+        <header>
+          <h1 className="text-lg font-extrabold tracking-tight text-road-900">{t('Reportes')}</h1>
+          <p className="text-xs text-road-500">{t('Mejora tu plan para ver ingresos, ganancias y gráficos de tus viajes.')}</p>
+        </header>
         <UpgradePrompt
           title={t('Los reportes son una función de pago')}
           description={t('Mejora tu plan para ver ingresos, ganancias y gráficos de tus viajes.')}
@@ -226,8 +229,10 @@ export function ReportsPage() {
   // Nothing logged yet — show a friendly empty state instead of all-zero KPIs.
   if (trips.length === 0) {
     return (
-      <div className="space-y-4">
-        <h1 className="text-xl font-bold">{t('Reportes')}</h1>
+      <div className="space-y-3">
+        <header>
+          <h1 className="text-lg font-extrabold tracking-tight text-road-900">{t('Reportes')}</h1>
+        </header>
         <EmptyState
           icon={AppIcons.reports}
           title={t('Aún no hay viajes')}
@@ -240,35 +245,40 @@ export function ReportsPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">{t('Reportes')}</h1>
-        <div className="flex gap-2">
+    <div className="space-y-3">
+      <header className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h1 className="text-lg font-extrabold tracking-tight text-road-900">{t('Reportes')}</h1>
+          <p className="text-xs text-road-500">{periodLabel}</p>
+        </div>
+        <div className="flex shrink-0 gap-2">
           <button
             type="button"
             onClick={handleExportCsv}
-            className="flex items-center gap-1.5 rounded-lg border border-road-200 bg-white px-3 py-1.5 text-xs font-medium text-road-700"
+            className="press flex items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-xs font-semibold text-road-700 shadow-card ring-1 ring-road-100"
           >
-            <AppIcons.download size={14} /> Excel
+            <AppIcons.download size={14} className="text-brand-600" /> Excel
           </button>
           <button
             type="button"
             onClick={handleExportPdf}
-            className="flex items-center gap-1.5 rounded-lg border border-road-200 bg-white px-3 py-1.5 text-xs font-medium text-road-700"
+            className="press flex items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-xs font-semibold text-road-700 shadow-card ring-1 ring-road-100"
           >
-            <AppIcons.pdf size={14} /> PDF
+            <AppIcons.pdf size={14} className="text-brand-600" /> PDF
           </button>
         </div>
-      </div>
-      <div className="flex gap-2">
+      </header>
+      <div className="flex gap-1.5 rounded-2xl bg-white p-1.5 shadow-card ring-1 ring-road-100">
         {(['day', 'week', 'month'] as Period[]).map((p) => (
           <button
             key={p}
             type="button"
             onClick={() => setPeriod(p)}
             className={cn(
-              'flex-1 rounded-lg py-2 text-sm font-medium min-h-[44px]',
-              period === p ? 'bg-brand-500 text-white' : 'bg-white border border-road-200',
+              'press flex-1 rounded-xl py-2 text-sm font-semibold transition-all min-h-[44px]',
+              period === p
+                ? 'bg-brand-grad text-white shadow-brand'
+                : 'text-road-500 hover:bg-road-50',
             )}
           >
             {p === 'day' ? t('Hoy') : p === 'week' ? t('Semana') : t('Mes')}
@@ -284,37 +294,51 @@ export function ReportsPage() {
           { label: t('Km totales'), value: kpis.km.toFixed(0) },
           { label: t('Viajes'), value: String(kpis.count) },
         ].map((k) => (
-          <div key={k.label} className="rounded-lg bg-white p-3 shadow-sm">
-            <p className="text-road-500">{k.label}</p>
-            <p className="font-bold">{k.value}</p>
+          <div
+            key={k.label}
+            className="animate-slide-up-in rounded-2xl bg-white p-3 shadow-card ring-1 ring-road-100"
+          >
+            <p className="text-xs font-medium text-road-500">{k.label}</p>
+            <p className="tabular mt-1 text-lg font-extrabold tracking-tight text-road-900">
+              {k.value}
+            </p>
           </div>
         ))}
       </div>
       {breakEven && hasCapability(user, 'breakEven') && (
-        <div className="rounded-lg border border-brand-200 bg-brand-50 p-4 shadow-sm">
-          <p className="text-sm font-semibold text-brand-800">{t('Punto de equilibrio mensual')}</p>
-          <p className="mt-1 text-xs text-road-600">
+        <div className="rounded-2xl bg-gradient-to-br from-brand-50 to-white p-3 shadow-card ring-1 ring-brand-100">
+          <p className="flex items-center gap-2 text-sm font-bold text-brand-800">
+            <AppIcons.gauge size={16} className="text-brand-600" />
+            {t('Punto de equilibrio mensual')}
+          </p>
+          <p className="mt-1 text-xs text-road-500">
             {t('Viajes al mes para cubrir tus costos fijos de {fixed}.', {
               fixed: formatCurrency(breakEven.monthlyFixed, currency, { compact: true }),
             })}
           </p>
           {breakEven.tripsNeeded == null ? (
-            <p className="mt-2 text-sm font-medium text-danger-500">
+            <p className="mt-2 text-sm font-semibold text-danger-500">
               {t('Con la ganancia promedio actual no se alcanza el equilibrio. Sube tarifas o reduce costos.')}
             </p>
           ) : (
-            <div className="mt-2 flex items-end justify-between">
+            <div className="mt-2.5 flex items-end justify-between">
               <div>
-                <p className="text-3xl font-bold text-brand-700">{breakEven.tripsNeeded}</p>
+                <p className="tabular text-2xl font-extrabold tracking-tight text-brand-700">
+                  {breakEven.tripsNeeded}
+                </p>
                 <p className="text-xs text-road-500">{t('viajes/mes necesarios')}</p>
               </div>
               <div className="text-right">
-                <p className="text-lg font-bold">{breakEven.projectedMonthlyTrips}</p>
+                <p className="tabular text-lg font-extrabold tracking-tight text-road-900">
+                  {breakEven.projectedMonthlyTrips}
+                </p>
                 <p className="text-xs text-road-500">{t('tu ritmo proyectado')}</p>
                 <span
                   className={cn(
-                    'mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-semibold',
-                    breakEven.covered ? 'bg-brand-100 text-brand-800' : 'bg-amber-100 text-amber-900',
+                    'mt-1.5 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset',
+                    breakEven.covered
+                      ? 'bg-brand-50 text-brand-700 ring-brand-200'
+                      : 'bg-amber-50 text-amber-700 ring-amber-200',
                   )}
                 >
                   {breakEven.covered ? t('Cubres tus costos') : t('Por debajo del equilibrio')}
@@ -327,15 +351,15 @@ export function ReportsPage() {
 
       {kpis.best && kpis.worst && kpis.count > 0 && (
         <div className="grid grid-cols-2 gap-2 text-sm">
-          <div className="rounded-lg bg-white p-3 shadow-sm">
-            <p className="text-road-500">{t('Mejor viaje')}</p>
-            <p className="font-bold text-brand-600">
+          <div className="rounded-2xl bg-white p-3 shadow-card ring-1 ring-road-100">
+            <p className="text-xs font-medium text-road-500">{t('Mejor viaje')}</p>
+            <p className="tabular mt-1 text-lg font-extrabold tracking-tight text-brand-600">
               {formatCurrency(kpis.best.netProfit, currency, { compact: true })}
             </p>
           </div>
-          <div className="rounded-lg bg-white p-3 shadow-sm">
-            <p className="text-road-500">{t('Peor viaje')}</p>
-            <p className="font-bold text-danger-500">
+          <div className="rounded-2xl bg-white p-3 shadow-card ring-1 ring-road-100">
+            <p className="text-xs font-medium text-road-500">{t('Peor viaje')}</p>
+            <p className="tabular mt-1 text-lg font-extrabold tracking-tight text-danger-500">
               {formatCurrency(kpis.worst.netProfit, currency, { compact: true })}
             </p>
           </div>
@@ -343,33 +367,33 @@ export function ReportsPage() {
       )}
 
       {profitByDay.length > 0 && (
-        <div className="rounded-xl bg-white p-4 shadow-sm">
-          <p className="mb-3 text-sm font-semibold text-road-700">{t('Ganancia por día')}</p>
+        <div className="rounded-2xl bg-white p-3 shadow-card ring-1 ring-road-100">
+          <p className="mb-2 text-sm font-bold text-road-900">{t('Ganancia por día')}</p>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={profitByDay} margin={{ top: 8, right: 8, left: -6, bottom: 0 }}>
               <defs>
                 <linearGradient id="barGreen" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#22c55e" />
-                  <stop offset="100%" stopColor="#16a34a" />
+                  <stop offset="0%" stopColor="#10b981" />
+                  <stop offset="100%" stopColor="#059669" />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eef2f7" />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e3e8ec" />
               <XAxis
                 dataKey="day"
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 11, fill: '#64748b' }}
+                tick={{ fontSize: 11, fill: '#94a3b0' }}
               />
               <YAxis
                 width={48}
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 10, fill: '#94a3b8' }}
+                tick={{ fontSize: 10, fill: '#94a3b0' }}
                 tickFormatter={(v) => formatCurrency(Number(v), currency, { compact: true })}
               />
               <Tooltip
-                cursor={{ fill: 'rgba(34,197,94,0.08)' }}
-                contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 12 }}
+                cursor={{ fill: 'rgba(16,185,129,0.08)' }}
+                contentStyle={{ borderRadius: 12, border: '1px solid #e3e8ec', fontSize: 12, boxShadow: '0 4px 16px rgba(15,23,42,0.08)' }}
                 formatter={(v) => [formatCurrency(Number(v), currency), t('Ganancia')]}
               />
               <Bar dataKey="profit" fill="url(#barGreen)" radius={[6, 6, 0, 0]} maxBarSize={46} />
@@ -378,8 +402,8 @@ export function ReportsPage() {
         </div>
       )}
       {statusDist.length > 0 && (
-        <div className="rounded-xl bg-white p-4 shadow-sm">
-          <p className="mb-3 text-sm font-semibold text-road-700">{t('Distribución')}</p>
+        <div className="rounded-2xl bg-white p-3 shadow-card ring-1 ring-road-100">
+          <p className="mb-2 text-sm font-bold text-road-900">{t('Distribución')}</p>
           <ResponsiveContainer width="100%" height={210}>
             <PieChart>
               <Pie
@@ -398,7 +422,7 @@ export function ReportsPage() {
                 ))}
               </Pie>
               <Tooltip
-                contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 12 }}
+                contentStyle={{ borderRadius: 12, border: '1px solid #e3e8ec', fontSize: 12, boxShadow: '0 4px 16px rgba(15,23,42,0.08)' }}
                 formatter={(v, n) => [`${v} ${t('Viajes').toLowerCase()}`, String(n)]}
               />
               <Legend
@@ -412,16 +436,16 @@ export function ReportsPage() {
         </div>
       )}
       {byPlatform.length > 0 && (
-        <div className="rounded-xl bg-white p-4 shadow-sm">
-          <p className="mb-3 text-sm font-semibold text-road-700">{t('Ganancia por plataforma')}</p>
+        <div className="rounded-2xl bg-white p-3 shadow-card ring-1 ring-road-100">
+          <p className="mb-2 text-sm font-bold text-road-900">{t('Ganancia por plataforma')}</p>
           <ResponsiveContainer width="100%" height={byPlatform.length * 44 + 16}>
             <BarChart data={byPlatform} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#eef2f7" />
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e3e8ec" />
               <XAxis
                 type="number"
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 10, fill: '#94a3b8' }}
+                tick={{ fontSize: 10, fill: '#94a3b0' }}
                 tickFormatter={(v) => formatCurrency(Number(v), currency, { compact: true })}
               />
               <YAxis
@@ -430,14 +454,14 @@ export function ReportsPage() {
                 width={76}
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 11, fill: '#64748b' }}
+                tick={{ fontSize: 11, fill: '#94a3b0' }}
               />
               <Tooltip
-                cursor={{ fill: 'rgba(34,197,94,0.08)' }}
-                contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 12 }}
+                cursor={{ fill: 'rgba(16,185,129,0.08)' }}
+                contentStyle={{ borderRadius: 12, border: '1px solid #e3e8ec', fontSize: 12, boxShadow: '0 4px 16px rgba(15,23,42,0.08)' }}
                 formatter={(v) => [formatCurrency(Number(v), currency), t('Ganancia')]}
               />
-              <Bar dataKey="profit" fill="#22c55e" radius={[0, 6, 6, 0]} maxBarSize={26} />
+              <Bar dataKey="profit" fill="#10b981" radius={[0, 6, 6, 0]} maxBarSize={26} />
             </BarChart>
           </ResponsiveContainer>
         </div>

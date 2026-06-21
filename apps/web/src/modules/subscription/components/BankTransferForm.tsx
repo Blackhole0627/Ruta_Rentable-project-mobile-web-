@@ -50,21 +50,32 @@ export function BankTransferForm({ amount, currency, disabled, onSubmit }: BankT
   ];
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-lg border border-road-200 bg-road-50 p-3 text-sm">
-        <p className="mb-2 font-semibold text-road-800">{t('Transfiere a esta cuenta')}</p>
-        <dl className="space-y-1.5">
+    <div className="space-y-2.5">
+      <div className="rounded-2xl bg-white p-3 text-sm shadow-card ring-1 ring-road-100">
+        <p className="mb-2.5 flex items-center gap-2 font-bold text-road-900">
+          <AppIcons.billing size={18} className="text-brand-600" />
+          {t('Transfiere a esta cuenta')}
+        </p>
+        <dl className="space-y-2">
           {rows.map((row) => (
-            <div key={row.label} className="flex items-start justify-between gap-2">
+            <div
+              key={row.label}
+              className="flex items-center justify-between gap-2 border-t border-road-100 pt-2 first:border-t-0 first:pt-0"
+            >
               <dt className="text-road-500">{row.label}</dt>
-              <dd className="flex items-center gap-1 text-right font-medium text-road-900">
-                {row.value}
+              <dd className="flex items-center gap-2 text-right font-semibold text-road-900">
+                <span className="tabular truncate">{row.value}</span>
                 {row.label !== t('Monto') && (
                   <button
                     type="button"
-                    className="text-brand-600 hover:underline"
+                    className="press inline-flex shrink-0 items-center gap-1 rounded-lg bg-brand-50 px-2 py-1 text-xs font-semibold text-brand-700 ring-1 ring-brand-200"
                     onClick={() => copy(row.label, row.value)}
                   >
+                    {copied === row.label ? (
+                      <AppIcons.check size={13} />
+                    ) : (
+                      <AppIcons.copy size={13} />
+                    )}
                     {copied === row.label ? t('Copiado') : t('Copiar')}
                   </button>
                 )}
@@ -75,7 +86,7 @@ export function BankTransferForm({ amount, currency, disabled, onSubmit }: BankT
       </div>
 
       <div>
-        <p className="mb-2 text-sm font-medium text-road-800">{t('Sube tu comprobante')}</p>
+        <p className="mb-2 text-sm font-semibold text-road-900">{t('Sube tu comprobante')}</p>
         <input
           ref={fileRef}
           type="file"
@@ -86,17 +97,23 @@ export function BankTransferForm({ amount, currency, disabled, onSubmit }: BankT
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
-          className="flex w-full flex-col items-center gap-2 rounded-xl border-2 border-dashed border-road-300 bg-white p-6 text-sm text-road-500 hover:border-brand-400"
+          className="press flex w-full flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-road-200 bg-road-50 p-4 text-sm text-road-500 transition-colors hover:border-brand-400 hover:bg-brand-50/40"
         >
           {receiptUrl ? (
             <>
-              <img src={receiptUrl} alt={t('Comprobante')} className="max-h-32 rounded-lg" />
-              <span className="text-brand-600">{t('Cambiar imagen')}</span>
+              <img
+                src={receiptUrl}
+                alt={t('Comprobante')}
+                className="max-h-32 rounded-xl shadow-card"
+              />
+              <span className="font-semibold text-brand-600">{t('Cambiar imagen')}</span>
             </>
           ) : (
             <>
-              <AppIcons.upload size={28} className="text-road-400" />
-              {t('Toca para subir foto/captura')}
+              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-brand-600 shadow-card ring-1 ring-road-100">
+                <AppIcons.upload size={24} />
+              </span>
+              <span className="font-medium">{t('Toca para subir foto/captura')}</span>
             </>
           )}
         </button>
@@ -104,6 +121,7 @@ export function BankTransferForm({ amount, currency, disabled, onSubmit }: BankT
 
       <Button
         className="w-full"
+        size="lg"
         disabled={disabled || working || !receiptUrl}
         onClick={async () => {
           if (!receiptUrl) return;

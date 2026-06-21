@@ -1,4 +1,12 @@
 :root {
-  --brand: #22c55e;
-  --road-900: #0f172a;
+  --brand: #10b981;
+  --brand-deep: #059669;
+  --gold: #f4b740;
+  --road-900: #0d141c;
 }
+
+/* Native theming hints (status bar / form controls). */
+:root {
+  accent-color: #10b981;
+}
+

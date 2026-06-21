@@ -45,14 +45,14 @@ export function ConfirmDialog({
 
   return (
     <Dialog open={open} onClose={working ? () => {} : onCancel} title={title}>
-      <p className="text-sm text-road-600">{message}</p>
-      <div className="mt-4 flex gap-2">
-        <Button variant="outline" className="flex-1" disabled={working} onClick={onCancel}>
+      <p className="text-sm leading-relaxed text-road-500">{message}</p>
+      <div className="mt-3 flex gap-2.5">
+        <Button variant="outline" className="press flex-1" disabled={working} onClick={onCancel}>
           {cancelLabel ?? t('Cancelar')}
         </Button>
         <Button
           variant={destructive ? 'destructive' : 'default'}
-          className="flex-1"
+          className="press flex-1"
           disabled={working}
           onClick={handleConfirm}
         >

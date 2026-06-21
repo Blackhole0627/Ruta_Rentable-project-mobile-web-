@@ -63,12 +63,14 @@ export function AccountPage() {
 
   if (status !== 'authenticated' || !session) {
     return (
-      <div className="space-y-4">
-        <h1 className="text-xl font-bold">{t('Cuenta')}</h1>
+      <div className="space-y-3">
+        <h1 className="text-lg font-extrabold tracking-tight text-road-900">{t('Cuenta')}</h1>
         <Card>
-          <CardContent className="flex flex-col items-center gap-3 py-8 text-center">
-            <AppIcons.cloudOff {...iconPropsLg} className="text-road-400" />
-            <p className="text-road-600">
+          <CardContent className="flex flex-col items-center gap-2.5 py-8 text-center">
+            <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-road-50 text-road-400 ring-1 ring-road-100">
+              <AppIcons.cloudOff {...iconPropsLg} />
+            </span>
+            <p className="max-w-xs text-sm text-road-500">
               {t('Estás en modo local. Inicia sesión para respaldar y sincronizar tus viajes entre dispositivos.')}
             </p>
             <Button onClick={() => navigate('/entrar')}>
@@ -81,37 +83,57 @@ export function AccountPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-xl font-bold">{t('Cuenta')}</h1>
+    <div className="space-y-3">
+      <h1 className="text-lg font-extrabold tracking-tight text-road-900">{t('Cuenta')}</h1>
+
+      {/* Identity header */}
+      <Card>
+        <CardContent className="flex items-center gap-2.5 p-3">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-grad text-white shadow-brand">
+            <AppIcons.account size={24} className="text-white" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-semibold text-road-900">{session.user.email}</p>
+            <p className="mt-0.5 flex items-center gap-1.5 text-xs text-road-500">
+              <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
+              {t(STATUS_LABELS[user?.subscriptionStatus ?? 'trial'])}
+            </p>
+          </div>
+          <Badge variant="profitable">{planLabel}</Badge>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <AppIcons.account {...iconPropsSm} /> {t('Mi cuenta')}
+          <CardTitle className="flex items-center gap-2 text-base text-road-900">
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+              <AppIcons.account {...iconPropsSm} />
+            </span>
+            {t('Mi cuenta')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
-          <div className="flex justify-between">
+          <div className="flex items-center justify-between">
             <span className="text-road-500">{t('Correo')}</span>
-            <span className="font-medium">{session.user.email}</span>
+            <span className="font-medium text-road-900">{session.user.email}</span>
           </div>
-          <div className="flex justify-between">
+          <div className="flex items-center justify-between">
             <span className="text-road-500">{t('Plan')}</span>
             <Badge variant="profitable">{planLabel}</Badge>
           </div>
-          <div className="flex justify-between">
+          <div className="flex items-center justify-between">
             <span className="text-road-500">{t('Estado')}</span>
-            <span className="font-medium">
+            <span className="font-medium text-road-900">
               {t(STATUS_LABELS[user?.subscriptionStatus ?? 'trial'])}
             </span>
           </div>
           {user?.subscriptionEndsAt && user?.subscriptionStatus === 'active' && (
-            <div className="flex justify-between">
+            <div className="flex items-center justify-between">
               <span className="text-road-500">{t('Vence')}</span>
-              <span className="font-medium">{formatDate(new Date(user.subscriptionEndsAt))}</span>
+              <span className="font-medium text-road-900">{formatDate(new Date(user.subscriptionEndsAt))}</span>
             </div>
           )}
-          <Button variant="outline" className="mt-2 w-full" onClick={() => navigate('/suscripcion')}>
+          <Button variant="outline" className="mt-1 w-full" onClick={() => navigate('/suscripcion')}>
             <AppIcons.crown size={18} /> {t('Ver planes y suscripción')}
           </Button>
         </CardContent>
@@ -119,14 +141,17 @@ export function AccountPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <AppIcons.cloud {...iconPropsSm} /> {t('Sincronización')}
+          <CardTitle className="flex items-center gap-2 text-base text-road-900">
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+              <AppIcons.cloud {...iconPropsSm} />
+            </span>
+            {t('Sincronización')}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-2">
           <div className="flex items-center justify-between text-sm">
             <span className="text-road-500">{t('Última sincronización')}</span>
-            <span className="font-medium">
+            <span className="font-medium text-road-900">
               {lastSyncedAt ? formatDate(new Date(lastSyncedAt)) : t('Nunca')}
             </span>
           </div>
@@ -155,26 +180,34 @@ export function AccountPage() {
         </CardContent>
       </Card>
 
-      <Button variant="outline" className="w-full press" onClick={() => setShowChangePw(true)}>
-        <AppIcons.key size={18} /> {t('Cambiar contraseña')}
-      </Button>
-      <Button
-        variant="outline"
-        className="w-full"
-        onClick={async () => {
-          await signOut();
-          toast.info(t('Sesión cerrada'));
-        }}
-      >
-        <AppIcons.logout size={18} /> {t('Cerrar sesión')}
-      </Button>
-      <Button
-        variant="destructive"
-        className="w-full"
-        onClick={() => setConfirmDelete(true)}
-      >
-        <AppIcons.trash size={18} /> {t('Eliminar mi cuenta')}
-      </Button>
+      <div className="space-y-2.5">
+        <Button variant="outline" className="w-full press" onClick={() => setShowChangePw(true)}>
+          <AppIcons.key size={18} /> {t('Cambiar contraseña')}
+        </Button>
+        <Button
+          variant="outline"
+          className="w-full press"
+          onClick={async () => {
+            await signOut();
+            toast.info(t('Sesión cerrada'));
+          }}
+        >
+          <AppIcons.logout size={18} /> {t('Cerrar sesión')}
+        </Button>
+      </div>
+
+      <div className="rounded-2xl bg-white p-3 shadow-card ring-1 ring-danger-100">
+        <p className="mb-2.5 flex items-center gap-2 text-sm font-semibold text-danger-600">
+          <AppIcons.alert size={16} /> {t('Eliminar mi cuenta')}
+        </p>
+        <Button
+          variant="destructive"
+          className="w-full press"
+          onClick={() => setConfirmDelete(true)}
+        >
+          <AppIcons.trash size={18} /> {t('Eliminar mi cuenta')}
+        </Button>
+      </div>
 
       <Dialog
         open={confirmDelete}
@@ -213,7 +246,7 @@ export function AccountPage() {
         onClose={() => setShowChangePw(false)}
         title={t('Cambiar contraseña')}
       >
-        <div className="space-y-3">
+        <div className="space-y-2">
           <div>
             <Label htmlFor="acc-newpw">{t('Nueva contraseña')}</Label>
             <PasswordInput

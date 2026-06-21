@@ -85,12 +85,14 @@ export function TopNav() {
   }, [status, load, startRealtime, stopRealtime]);
 
   return (
-    <header className="sticky top-0 z-40 flex items-center justify-between border-b border-road-100 bg-white/95 px-4 py-2.5 backdrop-blur">
+    <header className="glass sticky top-0 z-40 flex items-center justify-between border-b border-road-100/80 px-3.5 py-2">
       <div className="flex items-center gap-2">
-        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500">
-          <AppIcons.calculator size={18} className="text-white" />
+        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-grad shadow-brand">
+          <AppIcons.calculator size={17} className="text-white" />
         </span>
-        <span className="font-bold text-road-900">RutaRentable</span>
+        <span className="text-[15px] font-extrabold tracking-tight text-road-900">
+          Ruta<span className="text-gradient-brand">Rentable</span>
+        </span>
       </div>
 
       {status === 'authenticated' && (
@@ -102,11 +104,11 @@ export function TopNav() {
               load();
             }}
             aria-label={t('Notificaciones')}
-            className="relative flex h-10 w-10 items-center justify-center rounded-lg hover:bg-road-100"
+            className="press relative flex h-10 w-10 items-center justify-center rounded-full text-road-600 hover:bg-road-100 active:bg-road-200"
           >
-            <AppIcons.bell size={22} className="text-road-700" />
+            <AppIcons.bell size={22} />
             {unread > 0 && (
-              <span className="absolute right-1.5 top-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-danger-500 px-1 text-[10px] font-bold text-white">
+              <span className="absolute right-1.5 top-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-danger-500 px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
                 {unread > 9 ? '9+' : unread}
               </span>
             )}
@@ -115,7 +117,7 @@ export function TopNav() {
           {open && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} role="presentation" />
-              <div className="absolute right-0 z-50 mt-1 w-80 max-w-[85vw] overflow-hidden rounded-xl border border-road-200 bg-white shadow-xl">
+              <div className="absolute right-0 z-50 mt-2 w-80 max-w-[85vw] overflow-hidden rounded-2xl border border-road-100 bg-white shadow-card-lg">
                 <div className="flex items-center justify-between border-b border-road-100 p-3">
                   <span className="font-semibold">{t('Notificaciones')}</span>
                   {unread > 0 && (

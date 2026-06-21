@@ -81,25 +81,36 @@ function DocUpload({
         type="button"
         disabled={disabled}
         onClick={() => ref.current?.click()}
-        className="flex w-full flex-col items-center gap-1.5 rounded-xl border-2 border-dashed border-road-300 bg-white p-4 text-center text-sm text-road-500 hover:border-brand-400 disabled:opacity-50"
+        className={cn(
+          'press flex w-full flex-col items-center gap-1.5 rounded-2xl border-2 border-dashed p-3 text-center text-sm transition-colors disabled:opacity-50',
+          file
+            ? 'border-brand-300 bg-brand-50/40 text-road-500'
+            : 'border-road-200 bg-road-50 text-road-500 hover:border-brand-400 hover:bg-brand-50/40',
+        )}
       >
         {file ? (
           isImage && previewUrl ? (
             <>
-              <img src={previewUrl} alt={t(label)} className="max-h-28 rounded-lg" />
-              <span className="text-brand-600">{t('Cambiar archivo')}</span>
+              <img
+                src={previewUrl}
+                alt={t(label)}
+                className="max-h-28 rounded-xl shadow-card"
+              />
+              <span className="font-semibold text-brand-600">{t('Cambiar archivo')}</span>
             </>
           ) : (
             <>
               <AppIcons.pdf size={26} className="text-brand-600" />
               <span className="max-w-full truncate text-road-700">{file.name}</span>
-              <span className="text-brand-600">{t('Cambiar archivo')}</span>
+              <span className="font-semibold text-brand-600">{t('Cambiar archivo')}</span>
             </>
           )
         ) : (
           <>
-            <AppIcons.upload size={24} className="text-road-400" />
-            {t('Subir foto o PDF')}
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-brand-600 shadow-card ring-1 ring-road-100">
+              <AppIcons.upload size={20} />
+            </span>
+            <span className="font-medium">{t('Subir foto o PDF')}</span>
           </>
         )}
       </button>
@@ -166,8 +177,9 @@ export function KycForm({ disabled, onSubmit }: KycFormProps) {
   };
 
   return (
-    <div className="space-y-5">
-      <p className="rounded-lg bg-brand-50 px-3 py-2 text-xs text-brand-800">
+    <div className="space-y-3">
+      <p className="flex items-start gap-2.5 rounded-2xl bg-brand-50 px-3.5 py-2.5 text-xs text-brand-800 ring-1 ring-brand-200">
+        <AppIcons.shieldCheck size={18} className="mt-0.5 shrink-0" />
         {t(
           'Por regulación contra el lavado de dinero (UAF), verificamos tu identidad antes de activar un plan de pago. Tus documentos se guardan de forma privada y cifrada.',
         )}
@@ -176,12 +188,12 @@ export function KycForm({ disabled, onSubmit }: KycFormProps) {
       {/* Subject type — individual only for now; company coming later. */}
       <div>
         <p className="mb-2 text-sm font-semibold text-road-900">{t('Tipo de solicitante')}</p>
-        <div className="flex rounded-lg border border-road-200 p-0.5 text-sm">
-          <span className="flex-1 rounded-md bg-brand-500 py-2 text-center font-medium text-white">
+        <div className="flex gap-1 rounded-xl bg-road-100 p-1 text-sm">
+          <span className="min-h-[40px] flex-1 rounded-lg bg-white py-2 text-center font-semibold text-road-900 shadow-card">
             {t('Persona individual')}
           </span>
           <span
-            className="flex-1 cursor-not-allowed rounded-md py-2 text-center font-medium text-road-300"
+            className="min-h-[40px] flex-1 cursor-not-allowed rounded-lg py-2 text-center font-medium text-road-300"
             title={t('Próximamente')}
           >
             {t('Empresa')}
@@ -190,7 +202,7 @@ export function KycForm({ disabled, onSubmit }: KycFormProps) {
       </div>
 
       {/* Personal data */}
-      <section className="space-y-3">
+      <section className="space-y-2">
         <h4 className="text-sm font-semibold text-road-900">{t('Datos personales')}</h4>
         <div>
           <Label htmlFor="kyc-name">{t('Nombre completo')}</Label>
@@ -201,7 +213,7 @@ export function KycForm({ disabled, onSubmit }: KycFormProps) {
             onChange={(e) => setP('fullName', e.target.value)}
           />
         </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <div>
             <Label htmlFor="kyc-dob">{t('Fecha de nacimiento')}</Label>
             <div className="mt-1">
@@ -253,7 +265,7 @@ export function KycForm({ disabled, onSubmit }: KycFormProps) {
       </section>
 
       {/* Documents */}
-      <section className="space-y-3">
+      <section className="space-y-2">
         <h4 className="text-sm font-semibold text-road-900">{t('Documentos')}</h4>
         {DOC_SLOTS.map((slot) => (
           <DocUpload
@@ -267,7 +279,7 @@ export function KycForm({ disabled, onSubmit }: KycFormProps) {
       </section>
 
       {/* Risk questionnaire */}
-      <section className="space-y-3">
+      <section className="space-y-2">
         <h4 className="text-sm font-semibold text-road-900">{t('Cuestionario de riesgo')}</h4>
         <div>
           <Label htmlFor="kyc-act">{t('Actividad económica')}</Label>
@@ -299,7 +311,7 @@ export function KycForm({ disabled, onSubmit }: KycFormProps) {
             onChange={(e) => setR('expectedMonthlyVolume', e.target.value)}
           />
         </div>
-        <div className="flex items-center justify-between rounded-lg border border-road-200 px-3 py-2.5">
+        <div className="flex items-center justify-between rounded-2xl bg-white px-3.5 py-2.5 shadow-card ring-1 ring-road-100">
           <div className="pr-3">
             <p className="text-sm font-medium text-road-800">
               {t('¿Eres una Persona Expuesta Políticamente (PEP)?')}
@@ -316,7 +328,7 @@ export function KycForm({ disabled, onSubmit }: KycFormProps) {
         </div>
       </section>
 
-      <Button className={cn('w-full')} disabled={disabled || working || !canSubmit} onClick={submit}>
+      <Button className="w-full" size="lg" disabled={disabled || working || !canSubmit} onClick={submit}>
         {working ? t('Enviando…') : t('Enviar para verificación')}
       </Button>
       <p className="text-center text-xs text-road-400">

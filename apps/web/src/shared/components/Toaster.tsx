@@ -2,10 +2,25 @@ import { useToastStore, type ToastKind } from '@/core/store/useToastStore';
 import { AppIcons } from '@/shared/constants/icons';
 import { cn } from '@/shared/utils/cn';
 
-const STYLES: Record<ToastKind, { wrap: string; icon: typeof AppIcons.success }> = {
-  success: { wrap: 'border-brand-200 bg-brand-50 text-brand-800', icon: AppIcons.success },
-  error: { wrap: 'border-red-200 bg-red-50 text-danger-600', icon: AppIcons.alert },
-  info: { wrap: 'border-road-200 bg-white text-road-700', icon: AppIcons.info },
+const STYLES: Record<
+  ToastKind,
+  { wrap: string; iconWrap: string; icon: typeof AppIcons.success }
+> = {
+  success: {
+    wrap: 'ring-brand-200 bg-white text-brand-800',
+    iconWrap: 'bg-brand-100 text-brand-600',
+    icon: AppIcons.success,
+  },
+  error: {
+    wrap: 'ring-danger-100 bg-white text-danger-700',
+    iconWrap: 'bg-danger-50 text-danger-500',
+    icon: AppIcons.alert,
+  },
+  info: {
+    wrap: 'ring-road-100 bg-white text-road-700',
+    iconWrap: 'bg-road-100 text-road-500',
+    icon: AppIcons.info,
+  },
 };
 
 /**
@@ -30,11 +45,18 @@ export function Toaster() {
             type="button"
             onClick={() => dismiss(t.id)}
             className={cn(
-              'animate-toast-in pointer-events-auto flex w-full max-w-sm items-start gap-2.5 rounded-xl border px-4 py-3 text-left text-sm font-medium shadow-lg shadow-road-900/10',
+              'animate-toast-in pointer-events-auto flex w-full max-w-sm items-center gap-2.5 rounded-2xl px-3.5 py-2.5 text-left text-sm font-semibold shadow-card-lg ring-1 ring-inset',
               style.wrap,
             )}
           >
-            <Icon size={18} className="mt-0.5 shrink-0" />
+            <span
+              className={cn(
+                'flex h-8 w-8 shrink-0 items-center justify-center rounded-xl',
+                style.iconWrap,
+              )}
+            >
+              <Icon size={18} />
+            </span>
             <span className="flex-1 leading-snug">{t.message}</span>
           </button>
         );

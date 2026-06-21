@@ -175,25 +175,39 @@ export function CalculatorPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <header>
-        <h1 className="text-xl font-bold text-road-900">
-          {t('Hola, {name}', { name: user?.name?.split(' ')[0] ?? t('conductor') })}
-        </h1>
-        <p className="text-sm text-road-500">
-          {vehicle.make} {vehicle.model}
-        </p>
+    <div className="space-y-3">
+      <header className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-xs font-medium text-road-500">
+            {t('Hola, {name}', { name: user?.name?.split(' ')[0] ?? t('conductor') })}
+          </p>
+          <h1 className="truncate text-lg font-extrabold tracking-tight text-road-900">
+            {t('¿Vale la pena este viaje?')}
+          </h1>
+        </div>
+        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-road-700 shadow-card ring-1 ring-road-100">
+          <AppIcons.car size={15} className="text-brand-600" />
+          <span className="max-w-[110px] truncate">
+            {vehicle.make} {vehicle.model}
+          </span>
+        </span>
       </header>
 
       <ReminderBanners />
 
       {onFreePlan && remaining != null && (
-        <div className="flex items-center justify-between rounded-lg bg-amber-100 px-3 py-2 text-sm text-amber-900">
-          <span>{t('Te quedan {n} cálculos gratis', { n: remaining })}</span>
-          <Link to="/suscripcion" className="font-semibold underline">
+        <Link
+          to="/suscripcion"
+          className="press flex items-center justify-between gap-2 rounded-2xl bg-gradient-to-r from-gold-50 to-gold-100 px-3.5 py-2.5 text-sm shadow-card ring-1 ring-gold-200"
+        >
+          <span className="flex items-center gap-2.5 font-medium text-gold-900">
+            <AppIcons.crown size={18} className="shrink-0 text-gold-600" />
+            {t('Te quedan {n} cálculos gratis', { n: remaining })}
+          </span>
+          <span className="shrink-0 font-bold text-gold-800 underline">
             {t('Mejorar plan')}
-          </Link>
-        </div>
+          </span>
+        </Link>
       )}
 
       <TripForm form={form} onChange={handleChange} />

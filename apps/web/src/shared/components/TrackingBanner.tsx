@@ -79,7 +79,7 @@ export function TrackingBanner() {
       {/* Drop zone hint while dragging near the bottom */}
       {overDrop && (
         <div className="fixed inset-x-0 bottom-6 z-40 flex justify-center">
-          <div className="flex items-center gap-2 rounded-full bg-danger-500/90 px-4 py-2 text-sm font-semibold text-white shadow-lg backdrop-blur">
+          <div className="flex items-center gap-2 rounded-full bg-danger-500/90 px-3.5 py-2.5 text-sm font-semibold text-white shadow-card-lg ring-1 ring-white/30 backdrop-blur">
             <AppIcons.stop size={16} /> {t('Suelta aquí para terminar')}
           </div>
         </div>
@@ -91,13 +91,13 @@ export function TrackingBanner() {
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         style={{ left: pos.x, top: pos.y, width: W }}
-        className="fixed z-50 cursor-grab touch-none select-none rounded-3xl border border-white/50 bg-white/55 p-3 shadow-2xl backdrop-blur-2xl active:cursor-grabbing"
+        className="glass fixed z-50 cursor-grab touch-none select-none rounded-2xl p-3 shadow-card-lg ring-1 ring-road-100 active:cursor-grabbing"
       >
-        <p className="text-center text-[11px] font-medium uppercase tracking-wide text-road-500">
+        <p className="text-center text-[11px] font-semibold uppercase tracking-wide text-road-400">
           {t('Distancia')}
         </p>
         <p className="text-center text-2xl font-extrabold leading-tight text-road-900">
-          {distanceKm.toFixed(2)} <span className="text-base font-bold">km</span>
+          {distanceKm.toFixed(2)} <span className="text-base font-bold text-road-500">km</span>
         </p>
         <div className="mt-2 flex gap-2">
           {paused ? (
@@ -105,7 +105,7 @@ export function TrackingBanner() {
               type="button"
               onClick={() => resume()}
               aria-label={t('Reanudar')}
-              className="flex h-11 flex-1 items-center justify-center rounded-2xl border border-white/60 bg-brand-500/90 text-white shadow-sm backdrop-blur active:scale-95"
+              className="press flex h-11 flex-1 items-center justify-center rounded-2xl bg-brand-grad text-white shadow-brand"
             >
               <AppIcons.play size={20} />
             </button>
@@ -114,7 +114,7 @@ export function TrackingBanner() {
               type="button"
               onClick={() => pause()}
               aria-label={t('Pausar')}
-              className="flex h-11 flex-1 items-center justify-center rounded-2xl border border-white/60 bg-white/70 text-road-800 shadow-sm backdrop-blur active:scale-95"
+              className="press flex h-11 flex-1 items-center justify-center rounded-2xl bg-white text-road-700 shadow-sm ring-1 ring-road-200"
             >
               <AppIcons.pause size={20} />
             </button>
@@ -123,7 +123,7 @@ export function TrackingBanner() {
             type="button"
             onClick={() => setConfirmEnd(true)}
             aria-label={t('Detener')}
-            className="flex h-11 flex-1 items-center justify-center rounded-2xl border border-white/60 bg-danger-500/90 text-white shadow-sm backdrop-blur active:scale-95"
+            className="press flex h-11 flex-1 items-center justify-center rounded-2xl bg-danger-500 text-white shadow-sm"
           >
             <AppIcons.stop size={20} />
           </button>
@@ -135,17 +135,17 @@ export function TrackingBanner() {
 
       {/* End / cancel confirmation */}
       {confirmEnd && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-road-900/50 p-6 backdrop-blur-sm">
-          <div className="w-full max-w-xs rounded-3xl border border-white/50 bg-white/90 p-5 text-center shadow-2xl backdrop-blur-2xl">
+        <div className="animate-backdrop-in fixed inset-0 z-[60] flex items-center justify-center bg-road-900/40 p-4 backdrop-blur-sm">
+          <div className="animate-slide-up-in w-full max-w-xs rounded-2xl bg-white p-4 text-center shadow-card-lg ring-1 ring-road-100">
             <p className="text-base font-bold text-road-900">{t('¿Terminar el viaje?')}</p>
-            <p className="mt-1 text-2xl font-extrabold text-brand-600">
+            <p className="mt-1 text-3xl font-extrabold text-gradient-brand">
               {distanceKm.toFixed(2)} km
             </p>
-            <div className="mt-4 flex gap-2">
+            <div className="mt-4 flex gap-2.5">
               <button
                 type="button"
                 onClick={() => setConfirmEnd(false)}
-                className="h-11 flex-1 rounded-2xl border border-road-200 bg-white font-semibold text-road-700"
+                className="press h-11 flex-1 rounded-2xl border border-road-200 bg-white font-semibold text-road-700 hover:bg-road-50"
               >
                 {t('Cancelar')}
               </button>
@@ -155,7 +155,7 @@ export function TrackingBanner() {
                   stop();
                   setConfirmEnd(false);
                 }}
-                className="h-11 flex-1 rounded-2xl bg-danger-500 font-semibold text-white"
+                className="press h-11 flex-1 rounded-2xl bg-danger-500 font-semibold text-white shadow-sm"
               >
                 {t('Terminar')}
               </button>

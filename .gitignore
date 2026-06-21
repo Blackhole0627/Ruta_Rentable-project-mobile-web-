@@ -2,6 +2,7 @@ node_modules/
 dist/
 .env
 .env.local
+.env.*.local
 *.log
 .DS_Store
 .idea/
@@ -9,6 +10,21 @@ dist/
 android/
 ios/
 .capacitor/
+
+# Temp / cache / build metadata — local only, never deploy
+.tmp/
+.cache/
+.turbo/
+coverage/
+*.tsbuildinfo
+
+# Vercel CLI local files (project link, pulled env) — keep out of the repo
+.vercel
+
+# Android signing secrets (in case any live outside the ignored android/ dir)
+*.keystore
+*.jks
+local.properties
 
 # Unrelated third-party tooling
 Skills/
@@ -26,7 +42,6 @@ requirement(yamamoto) (1).docx
 # NOTE: supabase/seed/ stays tracked — the web app imports those JSON files
 # at build time (apps/web/src/core/constants/catalog.ts), so removing them
 # breaks the Vercel build. Edge Functions under supabase/functions also stay.
-supabase/migrations/
 
 # LAFISE API docs — contains real credentials, keep local only
 docs/lafise docs.txt

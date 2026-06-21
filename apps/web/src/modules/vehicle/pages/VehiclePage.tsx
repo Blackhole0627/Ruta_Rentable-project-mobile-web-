@@ -83,41 +83,48 @@ export function VehiclePage() {
   if (isLoading) return <LoadingSkeleton variant="page" />;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <header>
-        <h1 className="text-xl font-bold">{t('Mis vehículos')}</h1>
+        <h1 className="text-lg font-extrabold tracking-tight text-road-900">{t('Mis vehículos')}</h1>
       </header>
 
       {vehicles.length > 0 && (
         <div className="space-y-2">
           {vehicles.map((v) => {
             const VIcon = v.unitType === 'motorcycle' ? AppIcons.motorcycle : AppIcons.car;
+            const selected = v.id === seed?.id;
             return (
             <div
               key={v.id}
               className={cn(
-                'flex items-center justify-between rounded-lg border bg-white p-3 transition-colors',
-                v.id === seed?.id ? 'border-brand-500 ring-1 ring-brand-500' : 'border-road-200',
+                'animate-slide-up-in flex items-center justify-between rounded-2xl bg-white p-3 shadow-card transition-all',
+                selected ? 'ring-2 ring-brand-500' : 'ring-1 ring-road-100',
               )}
             >
               <button
                 type="button"
-                className="flex flex-1 items-center gap-3 text-left"
+                className="press flex min-w-0 flex-1 items-center gap-2.5 text-left"
                 onClick={() => setOverride({ mode: 'edit', id: v.id })}
               >
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-road-100 text-road-500">
-                  <VIcon size={18} />
+                <span
+                  className={cn(
+                    'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-colors',
+                    v.isActive ? 'bg-brand-grad text-white shadow-brand' : 'bg-road-100 text-road-500',
+                  )}
+                >
+                  <VIcon size={20} />
                 </span>
-                <span>
-                  <span className="block font-medium">
+                <span className="min-w-0">
+                  <span className="block truncate font-bold text-road-900">
                     {v.make} {v.model}
                   </span>
-                  <span className="text-xs text-road-500">
-                    {v.unitType === 'car' ? t('Automóvil') : t('Motocicleta')} · {v.realKmPerLiter} km/L
+                  <span className="block truncate text-xs text-road-500">
+                    {v.unitType === 'car' ? t('Automóvil') : t('Motocicleta')} ·{' '}
+                    <span className="tabular">{v.realKmPerLiter}</span> km/L
                   </span>
                 </span>
               </button>
-              <div className="flex items-center gap-2">
+              <div className="flex shrink-0 items-center gap-1.5 pl-2">
                 {v.isActive ? (
                   <Badge variant="profitable">{t('Activo')}</Badge>
                 ) : (
@@ -136,7 +143,7 @@ export function VehiclePage() {
                 <button
                   type="button"
                   aria-label={t('Eliminar')}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg text-danger-500 transition-colors hover:bg-red-50"
+                  className="press flex h-11 w-11 items-center justify-center rounded-xl text-road-400 transition-colors hover:bg-danger-50 hover:text-danger-500"
                   onClick={() => setPendingDelete(v)}
                 >
                   <AppIcons.trash size={18} />
@@ -300,14 +307,14 @@ function VehicleEditor({
     <>
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-100 text-brand-700 transition-colors">
-              <EditorIcon size={18} />
+          <CardTitle className="flex items-center gap-2.5 text-base font-bold text-road-900">
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-grad text-white shadow-brand transition-colors">
+              <EditorIcon size={19} />
             </span>
             {isNew ? t('Nuevo vehículo') : t('Editar vehículo')}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-2">
           <div className="flex gap-2">
             {(['car', 'motorcycle'] as UnitType[]).map((ut) => {
               const TIcon = ut === 'car' ? AppIcons.car : AppIcons.motorcycle;
@@ -350,18 +357,18 @@ function VehicleEditor({
           <button
             type="button"
             onClick={() => setShowAdvanced((s) => !s)}
-            className="flex w-full items-center justify-between rounded-lg border border-road-200 px-3 py-2.5 text-sm font-medium text-road-700"
+            className="press flex min-h-[44px] w-full items-center justify-between rounded-xl bg-road-50 px-3.5 py-2.5 text-sm font-semibold text-road-700 ring-1 ring-road-100 transition-colors hover:bg-road-100"
           >
             {t('Ajustar costos detallados')}
             {showAdvanced ? (
-              <AppIcons.chevronUp {...iconPropsSm} />
+              <AppIcons.chevronUp {...iconPropsSm} className="text-road-400" />
             ) : (
-              <AppIcons.chevronDown {...iconPropsSm} />
+              <AppIcons.chevronDown {...iconPropsSm} className="text-road-400" />
             )}
           </button>
 
           {showAdvanced && (
-            <div className="space-y-3 rounded-lg bg-road-50 p-3">
+            <div className="animate-slide-up-in space-y-2 rounded-xl bg-road-50 p-3 ring-1 ring-road-100">
               <p className="text-xs text-road-500">
                 {t('Si dejas un campo vacío, se usa el valor por defecto para {tipo}.', {
                   tipo: unitType === 'car' ? t('autos') : t('motos'),
@@ -429,13 +436,13 @@ function VehicleEditor({
       </Card>
 
       {breakdown && (
-        <Card className="border-brand-200 bg-brand-50">
-          <CardContent className="space-y-4 pt-4">
+        <Card className="border-0 bg-gradient-to-br from-brand-50 to-white ring-1 ring-brand-100">
+          <CardContent className="space-y-2.5 pt-3">
             <div className="text-center">
-              <p className="text-sm text-road-600">{t('Costo total por km')}</p>
-              <p className="text-3xl font-bold text-brand-700">
+              <p className="text-xs font-medium text-road-500">{t('Costo total por km')}</p>
+              <p className="tabular mt-1 text-2xl font-extrabold tracking-tight text-brand-700">
                 {formatCurrency(breakdown.totalPerKm, currency, { compact: true })}
-                /km
+                <span className="text-base font-bold text-brand-600">/km</span>
               </p>
             </div>
             <CostBreakdownChart breakdown={breakdown} currency={currency} />
@@ -443,7 +450,7 @@ function VehicleEditor({
         </Card>
       )}
 
-      <Button className="mt-4 w-full" size="lg" onClick={handleSave}>
+      <Button className="mt-3 w-full" size="lg" onClick={handleSave}>
         {isNew ? t('Guardar vehículo') : t('Guardar cambios')}
       </Button>
     </>

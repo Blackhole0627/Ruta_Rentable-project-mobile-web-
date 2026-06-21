@@ -62,12 +62,21 @@ export function CooperativePage() {
 
   if (status !== 'authenticated') {
     return (
-      <div className="space-y-4">
-        <h1 className="text-xl font-bold">{t('Cooperativa')}</h1>
-        <Card>
-          <CardContent className="py-8 text-center text-road-600">
-            {t('Inicia sesión para crear o administrar una cooperativa.')}
-            <Button className="mt-4" onClick={() => navigate('/entrar')}>
+      <div className="space-y-3">
+        <header>
+          <h1 className="text-lg font-extrabold tracking-tight text-road-900">
+            {t('Cooperativa')}
+          </h1>
+        </header>
+        <Card className="ring-1 ring-road-100">
+          <CardContent className="flex flex-col items-center gap-2.5 py-8 text-center">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-100 text-brand-700">
+              <AppIcons.fleet size={24} />
+            </span>
+            <p className="text-sm text-road-500">
+              {t('Inicia sesión para crear o administrar una cooperativa.')}
+            </p>
+            <Button className="w-full" onClick={() => navigate('/entrar')}>
               {t('Iniciar sesión')}
             </Button>
           </CardContent>
@@ -85,23 +94,25 @@ export function CooperativePage() {
   // ---- No cooperative yet: create flow (open to any signed-in user) ----
   if (!coop) {
     return (
-      <div className="space-y-4">
-        <header className="flex items-center gap-3">
-          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-100 text-brand-700">
+      <div className="space-y-2.5">
+        <header className="flex items-center gap-2.5">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-brand-100 text-brand-700">
             <AppIcons.fleet {...iconPropsLg} />
           </span>
-          <h1 className="text-xl font-bold">{t('Cooperativa / Flota')}</h1>
+          <h1 className="text-lg font-extrabold tracking-tight text-road-900">
+            {t('Cooperativa / Flota')}
+          </h1>
         </header>
 
         {error && (
-          <div className="rounded-lg border border-danger-500/30 bg-red-50 p-3 text-sm text-danger-500">
+          <div className="rounded-2xl bg-danger-50 p-3 text-sm font-medium text-danger-700 ring-1 ring-danger-100">
             {error}
           </div>
         )}
 
         {invites.map((inv) => (
-          <Card key={inv.member.id} className="border-brand-300 bg-brand-50">
-            <CardContent className="space-y-3 pt-4">
+          <Card key={inv.member.id} className="ring-1 ring-brand-200">
+            <CardContent className="space-y-2 p-3.5">
               <p className="text-sm font-semibold text-road-900">
                 {t('Te invitaron a "{coop}"', { coop: inv.coop.name })}
               </p>
@@ -146,8 +157,8 @@ export function CooperativePage() {
           </Card>
         ))}
 
-        <Card>
-          <CardContent className="space-y-3 pt-4">
+        <Card className="ring-1 ring-road-100">
+          <CardContent className="space-y-2 p-3.5">
             <p className="text-sm text-road-600">
               {t('Crea una cooperativa para administrar varios conductores: invita a tu flota, mira la rentabilidad de cada uno y maneja la facturación en grupo.')}
             </p>
@@ -184,21 +195,23 @@ export function CooperativePage() {
   // ---- Member view: confirm membership + allow leaving ----
   if (coop && !isAdmin) {
     return (
-      <div className="space-y-4">
-        <header className="flex items-center gap-3">
-          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-100 text-brand-700">
+      <div className="space-y-2.5">
+        <header className="flex items-center gap-2.5">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-brand-100 text-brand-700">
             <AppIcons.fleet {...iconPropsLg} />
           </span>
-          <div>
-            <h1 className="text-xl font-bold">{coop.name}</h1>
+          <div className="min-w-0">
+            <h1 className="truncate text-lg font-extrabold tracking-tight text-road-900">
+              {coop.name}
+            </h1>
             <p className="text-xs text-road-500">{t('Miembro de la cooperativa')}</p>
           </div>
         </header>
 
-        <Card className="border-brand-300 bg-brand-50">
-          <CardContent className="flex items-start gap-3 pt-4">
-            <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-500 text-white">
-              <AppIcons.check size={20} />
+        <Card className="ring-1 ring-brand-200">
+          <CardContent className="flex items-start gap-2.5 p-3.5">
+            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-grad text-white shadow-brand">
+              <AppIcons.check size={20} strokeWidth={3} />
             </span>
             <div>
               <p className="font-semibold text-road-900">
@@ -212,19 +225,19 @@ export function CooperativePage() {
         </Card>
 
         {coop.subscriptionActive ? (
-          <div className="flex items-center gap-2 rounded-lg border border-brand-300 bg-brand-50 px-3 py-2.5 text-sm font-medium text-brand-800">
-            <AppIcons.crown size={16} />
+          <div className="flex items-center gap-2.5 rounded-2xl bg-gradient-to-r from-gold-50 to-gold-100 px-3.5 py-2.5 text-sm font-semibold text-gold-900 shadow-card ring-1 ring-gold-200">
+            <AppIcons.crown size={18} className="shrink-0 text-gold-600" />
             {t('Tu cooperativa está activa: tienes acceso premium.')}
           </div>
         ) : (
-          <div className="flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm font-medium text-amber-900">
-            <AppIcons.clock size={16} />
+          <div className="flex items-center gap-2.5 rounded-2xl bg-amber-50 px-3.5 py-2.5 text-sm font-medium text-amber-900 shadow-card ring-1 ring-amber-200">
+            <AppIcons.clock size={18} className="shrink-0" />
             {t('Tu cooperativa aún no está activa. El administrador debe activar el plan.')}
           </div>
         )}
 
         {error && (
-          <div className="rounded-lg border border-danger-500/30 bg-red-50 p-3 text-sm text-danger-500">
+          <div className="rounded-2xl bg-danger-50 p-3 text-sm font-medium text-danger-700 ring-1 ring-danger-100">
             {error}
           </div>
         )}
@@ -257,13 +270,15 @@ export function CooperativePage() {
 
   // ---- Cooperative dashboard (admin) ----
   return (
-    <div className="space-y-4">
-      <header className="flex items-center gap-3">
-        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-100 text-brand-700">
+    <div className="space-y-2.5">
+      <header className="flex items-center gap-2.5">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-brand-100 text-brand-700">
           <AppIcons.fleet {...iconPropsLg} />
         </span>
-        <div>
-          <h1 className="text-xl font-bold">{coop.name}</h1>
+        <div className="min-w-0">
+          <h1 className="truncate text-lg font-extrabold tracking-tight text-road-900">
+            {coop.name}
+          </h1>
           <p className="text-xs text-road-500">
             {isAdmin ? t('Administrador de la cooperativa') : t('Miembro de la cooperativa')}
           </p>
@@ -271,43 +286,53 @@ export function CooperativePage() {
       </header>
 
       {!coop.subscriptionActive && (
-        <div className="rounded-xl border border-amber-300 bg-amber-50 p-4">
-          <p className="flex items-center gap-2 text-sm font-semibold text-amber-900">
-            <AppIcons.crown size={18} /> {t('Activa tu flota')}
+        <div className="rounded-2xl bg-gradient-to-br from-gold-50 to-gold-100 p-3.5 shadow-card ring-1 ring-gold-200">
+          <p className="flex items-center gap-2 text-sm font-bold text-gold-900">
+            <AppIcons.crown size={18} className="text-gold-600" /> {t('Activa tu flota')}
           </p>
-          <p className="mt-1 text-xs text-amber-800">
+          <p className="mt-1 text-xs text-gold-800">
             {t('Compra el plan Cooperativa para dar acceso premium a todos tus conductores (hasta {max}).', { max: MAX_COOP_DRIVERS })}
           </p>
-          <Button className="press mt-3 w-full" onClick={() => navigate('/suscripcion')}>
+          <Button
+            variant="gold"
+            className="press mt-3 w-full"
+            onClick={() => navigate('/suscripcion')}
+          >
             <AppIcons.crown size={18} /> {t('Comprar plan Cooperativa')}
           </Button>
         </div>
       )}
 
       {report && (
-        <div className="grid grid-cols-2 gap-2 text-sm">
-          <div className="rounded-lg bg-white p-3 shadow-sm">
-            <p className="text-road-500">{t('Ganancia de la flota')}</p>
-            <p className="text-lg font-bold text-brand-600">
+        <div className="grid grid-cols-2 gap-2.5 text-sm">
+          <div className="rounded-2xl bg-white p-3 shadow-card ring-1 ring-road-100">
+            <p className="text-xs font-medium text-road-500">{t('Ganancia de la flota')}</p>
+            <p className="tabular mt-1 text-xl font-extrabold tracking-tight text-brand-600">
               {formatCurrency(report.totalProfit, currency, { compact: true })}
             </p>
           </div>
-          <div className="rounded-lg bg-white p-3 shadow-sm">
-            <p className="text-road-500">{t('Viajes totales')}</p>
-            <p className="text-lg font-bold">{report.totalTrips}</p>
+          <div className="rounded-2xl bg-white p-3 shadow-card ring-1 ring-road-100">
+            <p className="text-xs font-medium text-road-500">{t('Viajes totales')}</p>
+            <p className="tabular mt-1 text-xl font-extrabold tracking-tight text-road-900">
+              {report.totalTrips}
+            </p>
           </div>
-          <div className="rounded-lg bg-white p-3 shadow-sm">
-            <p className="text-road-500">{t('Conductores rentables')}</p>
-            <p className="text-lg font-bold text-brand-600">{report.profitableDrivers}</p>
+          <div className="rounded-2xl bg-white p-3 shadow-card ring-1 ring-road-100">
+            <p className="text-xs font-medium text-road-500">{t('Conductores rentables')}</p>
+            <p className="tabular mt-1 text-xl font-extrabold tracking-tight text-brand-600">
+              {report.profitableDrivers}
+            </p>
           </div>
-          <div className="rounded-lg bg-white p-3 shadow-sm">
-            <p className="text-road-500">{t('No rentables')}</p>
-            <p className="text-lg font-bold text-danger-500">{report.unprofitableDrivers}</p>
+          <div className="rounded-2xl bg-white p-3 shadow-card ring-1 ring-road-100">
+            <p className="text-xs font-medium text-road-500">{t('No rentables')}</p>
+            <p className="tabular mt-1 text-xl font-extrabold tracking-tight text-danger-500">
+              {report.unprofitableDrivers}
+            </p>
           </div>
         </div>
       )}
 
-      <Card>
+      <Card className="ring-1 ring-road-100">
         <CardHeader>
           <CardTitle className="text-base">
             {t('Conductores ({n}/{max})', {
@@ -320,10 +345,10 @@ export function CooperativePage() {
           {report?.drivers.map((d) => (
             <div
               key={d.memberId}
-              className="flex items-center justify-between gap-2 rounded-lg border border-road-100 p-2.5"
+              className="flex items-center justify-between gap-2 rounded-xl bg-white px-3 py-2.5 ring-1 ring-road-100"
             >
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium">{d.name}</p>
+                <p className="truncate text-sm font-semibold text-road-900">{d.name}</p>
                 <p className="truncate text-xs text-road-500">{d.email}</p>
                 <p className="text-xs text-road-400">
                   {t('{n} viajes · margen {m}', {
@@ -335,7 +360,7 @@ export function CooperativePage() {
               <div className="flex shrink-0 flex-col items-end gap-1">
                 <span
                   className={cn(
-                    'font-bold',
+                    'tabular font-extrabold tracking-tight',
                     d.totalProfit >= 0 ? 'text-brand-600' : 'text-danger-500',
                   )}
                 >
@@ -366,7 +391,7 @@ export function CooperativePage() {
 
       {isAdmin && (
         <>
-          <Card>
+          <Card className="ring-1 ring-road-100">
             <CardHeader>
               <CardTitle className="text-base">{t('Invitar conductor')}</CardTitle>
             </CardHeader>
@@ -416,13 +441,13 @@ export function CooperativePage() {
             onSave={updateParams}
           />
 
-          <Card>
+          <Card className="ring-1 ring-road-100">
             <CardHeader>
               <CardTitle className="text-base">{t('Facturación en grupo')}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-2.5">
               {coop.subscriptionActive ? (
-                <p className="flex items-center gap-2 text-sm font-medium text-brand-700">
+                <p className="flex items-center gap-2 text-sm font-semibold text-brand-700">
                   <AppIcons.check size={16} />{' '}
                   {t('Plan Cooperativa activo. Toda tu flota tiene premium.')}
                 </p>
@@ -467,7 +492,7 @@ export function CooperativePage() {
                           setWorking(true);
                           try {
                             await payGroup(coopPrice);
-                            toast.success(t('Pago registrado ✓'));
+                            toast.success(t('Pago registrado'));
                           } catch (err) {
                             toast.error(errMessage(err, t('No se pudo registrar el pago.')));
                           } finally {
@@ -541,7 +566,7 @@ function CoopParamsCard({
   void currency;
 
   return (
-    <Card>
+    <Card className="ring-1 ring-road-100">
       <CardHeader>
         <CardTitle className="text-base">{t('Parámetros de la flota')}</CardTitle>
       </CardHeader>

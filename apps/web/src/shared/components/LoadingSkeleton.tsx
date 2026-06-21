@@ -12,7 +12,7 @@ export function LoadingSkeleton({ variant = 'page' }: LoadingSkeletonProps) {
       <div className="space-y-3">
         <Skeleton className="h-7 w-40" />
         {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-20 w-full rounded-lg" />
+          <Skeleton key={i} className="h-20 w-full rounded-2xl" />
         ))}
       </div>
     );
@@ -22,7 +22,7 @@ export function LoadingSkeleton({ variant = 'page' }: LoadingSkeletonProps) {
     return (
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
         {Array.from({ length: 6 }).map((_, i) => (
-          <Skeleton key={i} className="h-24 w-full rounded-xl" />
+          <Skeleton key={i} className="h-24 w-full rounded-2xl" />
         ))}
       </div>
     );
@@ -32,10 +32,10 @@ export function LoadingSkeleton({ variant = 'page' }: LoadingSkeletonProps) {
     return (
       <div className="space-y-3">
         <div className="flex gap-3">
-          <Skeleton className="h-10 flex-1 rounded-lg" />
-          <Skeleton className="h-10 w-40 rounded-lg" />
+          <Skeleton className="h-10 flex-1 rounded-xl" />
+          <Skeleton className="h-10 w-40 rounded-xl" />
         </div>
-        <Skeleton className="h-64 w-full rounded-xl" />
+        <Skeleton className="h-64 w-full rounded-2xl" />
       </div>
     );
   }
@@ -44,9 +44,9 @@ export function LoadingSkeleton({ variant = 'page' }: LoadingSkeletonProps) {
   return (
     <div className="space-y-4">
       <Skeleton className="h-7 w-40" />
-      <Skeleton className="h-24 w-full rounded-xl" />
-      <Skeleton className="h-24 w-full rounded-xl" />
-      <Skeleton className="h-40 w-full rounded-xl" />
+      <Skeleton className="h-24 w-full rounded-2xl" />
+      <Skeleton className="h-24 w-full rounded-2xl" />
+      <Skeleton className="h-40 w-full rounded-2xl" />
     </div>
   );
 }

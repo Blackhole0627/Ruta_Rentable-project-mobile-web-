@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -6,9 +8,26 @@
   * {
     @apply border-road-200;
   }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
   body {
-    @apply bg-road-50 text-road-900 antialiased;
-    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    @apply text-road-900 antialiased;
+    font-family:
+      'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    background-color: #f6f8f9;
+    background-image: radial-gradient(
+      120% 70% at 50% -10%,
+      #e3f5ec 0%,
+      rgba(246, 248, 249, 0) 55%
+    );
+    background-attachment: fixed;
+    letter-spacing: -0.011em;
+  }
+  /* Tabular figures keep money columns aligned. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
   }
 }
 
@@ -18,6 +37,21 @@
 
 .pt-safe {
   padding-top: env(safe-area-inset-top, 0);
+}
+
+/* Emerald-to-deep gradient text for hero numbers / brand wordmark. */
+.text-gradient-brand {
+  background-image: linear-gradient(135deg, #059669 0%, #047857 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Frosted surface used by the floating nav and sticky bars. */
+.glass {
+  background-color: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
 }
 
 @keyframes sheet-up {

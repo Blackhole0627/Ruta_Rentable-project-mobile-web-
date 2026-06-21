@@ -181,16 +181,22 @@ export function LoginPage() {
           : t('Entrar con contraseña');
 
   return (
-    <div className="flex min-h-screen flex-col justify-center bg-road-900 px-4 py-8">
-      <div className="mb-6 flex flex-col items-center text-white">
-        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-500 shadow-lg shadow-brand-500/30">
+    <div className="relative flex min-h-screen flex-col justify-center overflow-hidden bg-road-900 px-4 py-8">
+      {/* Ambient emerald glow for depth. */}
+      <div className="pointer-events-none absolute -top-24 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-brand-500/30 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-24 -right-10 h-64 w-64 rounded-full bg-brand-700/20 blur-3xl" />
+
+      <div className="relative mb-5 flex flex-col items-center text-white">
+        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-grad shadow-brand-lg ring-1 ring-white/10">
           <AppIcons.calculator {...iconPropsLg} className="text-white" />
         </span>
-        <h1 className="mt-3 text-2xl font-bold">RutaRentable</h1>
-        <p className="text-sm text-road-300">{t('Inicia sesión para sincronizar tus datos')}</p>
+        <h1 className="mt-3 text-xl font-extrabold tracking-tight">
+          Ruta<span className="text-brand-400">Rentable</span>
+        </h1>
+        <p className="mt-1 text-xs text-road-300">{t('Inicia sesión para sincronizar tus datos')}</p>
       </div>
 
-      <Card className="animate-slide-up-in">
+      <Card className="relative animate-slide-up-in">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             {step === 'code' && (
@@ -202,7 +208,7 @@ export function LoginPage() {
                   setCode('');
                   clearError();
                 }}
-                className="-ml-1 flex h-7 w-7 items-center justify-center rounded-lg text-road-500 hover:bg-road-100"
+                className="press -ml-1 flex h-8 w-8 items-center justify-center rounded-xl text-road-500 ring-1 ring-road-100 hover:bg-road-50"
               >
                 <AppIcons.back size={18} />
               </button>
@@ -210,7 +216,7 @@ export function LoginPage() {
             {step === 'code' ? codeTitle : formTitle}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-2.5">
           {/* ----------------- CODE STEP (shared) ----------------- */}
           {step === 'code' ? (
             <>
@@ -220,7 +226,7 @@ export function LoginPage() {
               </p>
 
               {(devCode || isMock) && (
-                <div className="rounded-lg bg-amber-100 px-3 py-2 text-sm text-amber-900">
+                <div className="rounded-xl bg-amber-50 px-3 py-2.5 text-sm text-amber-900 ring-1 ring-amber-200">
                   {devCode ? (
                     <>
                       {t('Código')}: <strong className="tracking-widest">{devCode}</strong>
@@ -530,10 +536,10 @@ export function LoginPage() {
           {/* ----------------- Google (hidden on code step) ----------------- */}
           {step === 'form' && (
             <>
-              <div className="flex items-center gap-2 text-xs text-road-400">
-                <span className="h-px flex-1 bg-road-200" />
+              <div className="flex items-center gap-2.5 text-xs font-medium uppercase tracking-wide text-road-400">
+                <span className="h-px flex-1 bg-road-100" />
                 o
-                <span className="h-px flex-1 bg-road-200" />
+                <span className="h-px flex-1 bg-road-100" />
               </div>
               <button
                 type="button"
@@ -542,7 +548,7 @@ export function LoginPage() {
                   if (await loginWithGoogle()) gotoHome();
                 }}
                 disabled={isWorking}
-                className="press flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg border border-road-300 bg-white px-4 text-sm font-medium text-road-700 hover:bg-road-50 disabled:opacity-50"
+                className="press flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-road-700 ring-1 ring-road-200 hover:bg-road-50 disabled:opacity-50"
               >
                 <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
                   <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.3-.4-3.5z" />
@@ -556,7 +562,7 @@ export function LoginPage() {
           )}
 
           {error && (
-            <p className="flex items-start gap-1.5 text-sm text-danger-500">
+            <p className="flex items-start gap-2 rounded-xl bg-danger-50 px-3 py-2.5 text-sm text-danger-600 ring-1 ring-danger-100">
               <AppIcons.alert size={16} className="mt-0.5 shrink-0" />
               <span>{error}</span>
             </p>

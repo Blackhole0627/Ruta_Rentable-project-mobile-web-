@@ -86,7 +86,7 @@ export function Select({
         id={id}
         disabled={disabled}
         onClick={() => setOpen((o) => !o)}
-        className="flex h-11 w-full items-center justify-between gap-2 rounded-lg border border-road-300 bg-white px-3 py-2 text-left text-base transition-colors hover:border-road-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex h-10 w-full items-center justify-between gap-2 rounded-xl border border-road-200 bg-white px-3 py-2 text-left text-base shadow-sm transition-colors hover:border-road-300 focus-visible:border-brand-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15 disabled:cursor-not-allowed disabled:opacity-50"
       >
         <span className={cn('truncate', !selected && 'text-road-400')}>
           {selected?.label ?? placeholder ?? 'Seleccionar'}

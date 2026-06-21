@@ -146,86 +146,106 @@ export function HistoryPage() {
   if (isLoading) return <LoadingSkeleton variant="list" />;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">{t('Historial')}</h1>
+    <div className="space-y-3">
+      <header className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h1 className="text-lg font-extrabold tracking-tight text-road-900">
+            {t('Historial')}
+          </h1>
+          <p className="text-xs text-road-500">
+            {totals.count} {t('Viajes')}
+          </p>
+        </div>
         {trips.length > 0 && (
           <button
             type="button"
             onClick={handleExportCsv}
-            className="flex items-center gap-1.5 rounded-lg border border-road-200 bg-white px-3 py-1.5 text-xs font-medium text-road-700"
+            className="press inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-xs font-semibold text-road-700 shadow-card ring-1 ring-road-100 hover:bg-road-50"
           >
-            <AppIcons.download size={14} /> Excel
+            <AppIcons.download size={14} className="text-brand-600" /> Excel
           </button>
         )}
-      </div>
+      </header>
 
-      <div className="grid grid-cols-3 gap-2 rounded-lg bg-white p-3 text-center text-sm shadow-sm">
-        <div>
-          <p className="text-road-500">{t('Viajes')}</p>
-          <p className="font-bold">{totals.count}</p>
+      <div className="grid grid-cols-3 gap-2">
+        <div className="rounded-2xl bg-white p-3 text-center shadow-card ring-1 ring-road-100">
+          <p className="text-xs font-medium text-road-500">{t('Viajes')}</p>
+          <p className="tabular mt-1 text-xl font-extrabold tracking-tight text-road-900">
+            {totals.count}
+          </p>
         </div>
-        <div>
-          <p className="text-road-500">{t('Ingresos')}</p>
-          <p className="font-bold">{formatCurrency(totals.income, currency, { compact: true })}</p>
+        <div className="rounded-2xl bg-white p-3 text-center shadow-card ring-1 ring-road-100">
+          <p className="text-xs font-medium text-road-500">{t('Ingresos')}</p>
+          <p className="tabular mt-1 text-xl font-extrabold tracking-tight text-road-900">
+            {formatCurrency(totals.income, currency, { compact: true })}
+          </p>
         </div>
-        <div>
-          <p className="text-road-500">{t('Ganancia')}</p>
-          <p className="font-bold text-brand-600">
+        <div className="rounded-2xl bg-white p-3 text-center shadow-card ring-1 ring-road-100">
+          <p className="text-xs font-medium text-road-500">{t('Ganancia')}</p>
+          <p
+            className={cn(
+              'tabular mt-1 text-xl font-extrabold tracking-tight',
+              totals.profit >= 0 ? 'text-brand-600' : 'text-danger-500',
+            )}
+          >
             {formatCurrency(totals.profit, currency, { compact: true })}
           </p>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        {(['all', 'profitable', 'acceptable', 'not_profitable'] as const).map((f) => (
-          <button
-            key={f}
-            type="button"
-            onClick={() => setStatusFilter(f)}
-            className={cn(
-              'min-h-[36px] rounded-full px-3 py-1.5 text-xs font-medium',
-              statusFilter === f ? 'bg-brand-500 text-white' : 'border border-road-200 bg-white',
-            )}
-          >
-            {f === 'all' ? t('Todos') : f === 'profitable' ? t('Rentables') : f === 'acceptable' ? t('Aceptables') : t('No rentables')}
-          </button>
-        ))}
-      </div>
+      <div className="space-y-2.5 rounded-2xl bg-white p-3 shadow-card ring-1 ring-road-100">
+        <div className="flex flex-wrap gap-2">
+          {(['all', 'profitable', 'acceptable', 'not_profitable'] as const).map((f) => (
+            <button
+              key={f}
+              type="button"
+              onClick={() => setStatusFilter(f)}
+              className={cn(
+                'press min-h-[36px] rounded-full px-3.5 py-1 text-xs font-semibold transition-colors ring-1',
+                statusFilter === f
+                  ? 'bg-brand-grad text-white shadow-brand ring-transparent'
+                  : 'bg-white text-road-600 ring-road-200 hover:bg-road-50',
+              )}
+            >
+              {f === 'all' ? t('Todos') : f === 'profitable' ? t('Rentables') : f === 'acceptable' ? t('Aceptables') : t('No rentables')}
+            </button>
+          ))}
+        </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <div className="col-span-2">
-          <Label className="text-xs">{t('Plataforma')}</Label>
-          <Select
-            className="mt-1 h-10"
-            value={platformFilter}
-            onChange={(e) => setPlatformFilter(e.target.value as Platform | 'all')}
-          >
-            <option value="all">{t('Todas las plataformas')}</option>
-            {PLATFORMS.map((p) => (
-              <option key={p} value={p}>
-                {t(PLATFORM_LABELS[p])}
-              </option>
-            ))}
-          </Select>
-        </div>
-        <div>
-          <Label className="text-xs">{t('Desde')}</Label>
-          <DatePicker
-            className="mt-1"
-            value={fromDate}
-            onChange={setFromDate}
-            placeholder={t('Desde')}
-          />
-        </div>
-        <div>
-          <Label className="text-xs">{t('Hasta')}</Label>
-          <DatePicker
-            className="mt-1"
-            value={toDate}
-            onChange={setToDate}
-            placeholder={t('Hasta')}
-          />
+        <div className="grid grid-cols-2 gap-2">
+          <div className="col-span-2">
+            <Label className="text-xs">{t('Plataforma')}</Label>
+            <Select
+              className="mt-1 h-10"
+              value={platformFilter}
+              onChange={(e) => setPlatformFilter(e.target.value as Platform | 'all')}
+            >
+              <option value="all">{t('Todas las plataformas')}</option>
+              {PLATFORMS.map((p) => (
+                <option key={p} value={p}>
+                  {t(PLATFORM_LABELS[p])}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs">{t('Desde')}</Label>
+            <DatePicker
+              className="mt-1"
+              value={fromDate}
+              onChange={setFromDate}
+              placeholder={t('Desde')}
+            />
+          </div>
+          <div>
+            <Label className="text-xs">{t('Hasta')}</Label>
+            <DatePicker
+              className="mt-1"
+              value={toDate}
+              onChange={setToDate}
+              placeholder={t('Hasta')}
+            />
+          </div>
         </div>
       </div>
 
@@ -238,20 +258,28 @@ export function HistoryPage() {
       ) : (
         <ul className="space-y-2">
           {filtered.map((trip) => (
-            <li key={trip.id} className="rounded-lg bg-white p-4 shadow-sm">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs text-road-500">{formatDate(new Date(trip.createdAt), lang)}</p>
-                  <p className="font-medium">{t(PLATFORM_LABELS[trip.platform as Platform])}</p>
-                  <p className="text-sm text-road-500">
+            <li
+              key={trip.id}
+              className="animate-slide-up-in overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-road-100"
+            >
+              <div className="flex items-start justify-between gap-2 p-3">
+                <div className="min-w-0">
+                  <p className="flex items-center gap-1.5 text-xs font-medium text-road-400">
+                    <AppIcons.clock size={13} />
+                    {formatDate(new Date(trip.createdAt), lang)}
+                  </p>
+                  <p className="mt-1 font-bold text-road-900">
+                    {t(PLATFORM_LABELS[trip.platform as Platform])}
+                  </p>
+                  <p className="tabular mt-0.5 text-sm text-road-500">
                     {trip.totalKm} km · {formatCurrency(trip.fareCharged, currency, { compact: true })}
                   </p>
                 </div>
-                <div className="text-right">
+                <div className="flex shrink-0 flex-col items-end gap-1.5">
                   <StatusBadge status={trip.status} />
                   <p
                     className={cn(
-                      'mt-1 font-bold',
+                      'tabular text-lg font-extrabold tracking-tight',
                       trip.netProfit >= 0 ? 'text-brand-600' : 'text-danger-500',
                     )}
                   >
@@ -259,17 +287,18 @@ export function HistoryPage() {
                   </p>
                 </div>
               </div>
-              <div className="mt-2 flex justify-end gap-2 border-t border-road-100 pt-2">
+              <div className="flex border-t border-road-100">
                 <button
                   type="button"
-                  className="flex items-center gap-1 text-xs font-medium text-road-600"
+                  className="press flex flex-1 items-center justify-center gap-1.5 py-2.5 text-xs font-semibold text-road-600 hover:bg-road-50"
                   onClick={() => setEditing(trip)}
                 >
                   <AppIcons.edit size={14} /> {t('Editar')}
                 </button>
+                <span className="w-px bg-road-100" />
                 <button
                   type="button"
-                  className="flex items-center gap-1 text-xs font-medium text-danger-500"
+                  className="press flex flex-1 items-center justify-center gap-1.5 py-2.5 text-xs font-semibold text-danger-500 hover:bg-danger-50"
                   onClick={() => setPendingDelete(trip)}
                 >
                   <AppIcons.trash size={14} /> {t('Eliminar')}
@@ -366,9 +395,14 @@ function TripEditDialog({
             <Input type="number" value={pct} onChange={(e) => setPct(Number(e.target.value))} />
           </div>
         </div>
-        <div className="flex items-center justify-between rounded-lg bg-road-50 p-3 text-sm">
-          <span>{t('Ganancia neta')}</span>
-          <span className={cn('font-bold', preview.netProfit >= 0 ? 'text-brand-600' : 'text-danger-500')}>
+        <div className="flex items-center justify-between rounded-2xl bg-road-50 px-3.5 py-2.5 ring-1 ring-road-100">
+          <span className="text-sm font-medium text-road-500">{t('Ganancia neta')}</span>
+          <span
+            className={cn(
+              'tabular text-lg font-extrabold tracking-tight',
+              preview.netProfit >= 0 ? 'text-brand-600' : 'text-danger-500',
+            )}
+          >
             {formatCurrency(preview.netProfit, currency, { compact: true })}
           </span>
         </div>

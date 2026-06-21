@@ -20,12 +20,11 @@ export function BottomNav() {
       className="fixed bottom-0 left-0 right-0 z-50 pb-safe"
       aria-label="Navegación principal"
     >
-      <div className="mx-auto max-w-lg px-2">
+      <div className="mx-auto max-w-lg px-3">
         <div
           className={cn(
-            'flex items-stretch justify-around gap-0.5 rounded-2xl px-1 py-1.5',
-            'bg-white/95 shadow-[0_-2px_16px_rgba(15,23,42,0.08),0_4px_24px_rgba(15,23,42,0.06)]',
-            'ring-1 ring-road-200/60 backdrop-blur-md',
+            'glass flex items-stretch justify-around gap-0.5 rounded-[1.25rem] px-1.5 py-1',
+            'shadow-nav ring-1 ring-road-200/60',
           )}
         >
           {links.map(({ to, label, icon: Icon, end }) => {
@@ -38,34 +37,40 @@ export function BottomNav() {
                 key={to}
                 to={to}
                 end={end}
-                className="relative flex min-h-[56px] min-w-[56px] flex-1 flex-col items-center justify-center"
+                className="press relative flex min-h-[50px] min-w-[56px] flex-1 flex-col items-center justify-center"
               >
+                {/* Active pill — soft emerald wash behind the icon. */}
                 <span
                   className={cn(
-                    'absolute inset-x-1 top-1 bottom-1 rounded-2xl transition-all duration-200 ease-out',
-                    isActive
-                      ? 'bg-brand-500/12 scale-100 opacity-100'
-                      : 'scale-90 opacity-0',
+                    'absolute inset-x-1 top-1 bottom-1 rounded-2xl bg-gradient-to-b from-brand-500/15 to-brand-600/10 ring-1 ring-brand-500/15 transition-all duration-200 ease-out',
+                    isActive ? 'scale-100 opacity-100' : 'scale-90 opacity-0',
+                  )}
+                />
+                {/* Active indicator dot above the tab. */}
+                <span
+                  className={cn(
+                    'absolute top-0.5 h-1 w-1 rounded-full bg-brand-500 transition-all duration-200',
+                    isActive ? 'opacity-100' : 'opacity-0',
                   )}
                 />
                 <span
                   className={cn(
-                    'relative flex flex-col items-center gap-0.5 px-2 py-1',
-                    isActive ? 'text-brand-700' : 'text-road-500',
+                    'relative flex flex-col items-center gap-0.5 px-2 py-0.5 transition-colors',
+                    isActive ? 'text-brand-700' : 'text-road-400',
                   )}
                 >
                   <Icon
                     {...iconProps}
                     className={cn(
                       'transition-all duration-200',
-                      isActive && 'text-brand-600 scale-105',
+                      isActive && 'text-brand-600 scale-110',
                     )}
-                    strokeWidth={isActive ? 2.25 : 1.75}
+                    strokeWidth={isActive ? 2.4 : 1.75}
                   />
                   <span
                     className={cn(
                       'text-[10px] font-medium leading-tight tracking-wide',
-                      isActive && 'font-semibold text-brand-800',
+                      isActive && 'font-bold text-brand-800',
                     )}
                   >
                     {t(label)}
@@ -76,7 +81,7 @@ export function BottomNav() {
           })}
         </div>
       </div>
-      <div className="h-2 bg-gradient-to-t from-road-50/80 to-transparent" />
+      <div className="h-2" />
     </nav>
   );
 }

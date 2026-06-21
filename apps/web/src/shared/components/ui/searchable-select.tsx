@@ -101,8 +101,8 @@ export function SearchableSelect({
         className={cn(
           'overflow-hidden rounded-xl border bg-white transition-shadow',
           open
-            ? 'border-road-900 shadow-[0_8px_24px_rgba(15,23,42,0.12)]'
-            : 'border-road-300 shadow-sm hover:border-road-400',
+            ? 'border-brand-400 shadow-card-lg ring-4 ring-brand-500/15'
+            : 'border-road-200 shadow-sm hover:border-road-300',
         )}
       >
         <button
@@ -111,7 +111,7 @@ export function SearchableSelect({
           aria-expanded={open}
           aria-haspopup="listbox"
           className={cn(
-            'flex h-12 w-full items-center justify-between gap-2 px-4 text-left',
+            'flex h-10 w-full items-center justify-between gap-2 px-3 text-left',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500',
           )}
         >
@@ -128,7 +128,7 @@ export function SearchableSelect({
         </button>
 
         {open && (
-          <div className="border-t border-road-200">
+          <div className="border-t border-road-100">
             {searchable && options.length > 6 && (
               <div className="flex items-center gap-2 border-b border-road-100 bg-road-50/80 px-3 py-2">
                 <AppIcons.search {...iconPropsSm} className="shrink-0 text-road-400" />
@@ -149,7 +149,7 @@ export function SearchableSelect({
               className="max-h-52 overflow-y-auto overscroll-contain py-1"
             >
               {filtered.length === 0 ? (
-                <li className="px-4 py-6 text-center text-sm text-road-500">{emptyMessage}</li>
+                <li className="px-4 py-5 text-center text-sm text-road-500">{emptyMessage}</li>
               ) : (
                 filtered.map((opt) => {
                   const isSelected = opt.value === value;
@@ -159,15 +159,31 @@ export function SearchableSelect({
                         type="button"
                         onClick={() => handleSelect(opt.value)}
                         className={cn(
-                          'flex w-full flex-col px-4 py-3 text-left transition-colors',
+                          'flex w-full items-start justify-between gap-2 px-4 py-2.5 text-left transition-colors',
                           isSelected
-                            ? 'bg-road-100 text-road-900'
+                            ? 'bg-brand-50 text-brand-700'
                             : 'text-road-800 hover:bg-road-50 active:bg-road-100',
                         )}
                       >
-                        <span className="text-base font-normal">{opt.label}</span>
-                        {opt.description && (
-                          <span className="mt-0.5 text-xs text-road-500">{opt.description}</span>
+                        <span className="flex min-w-0 flex-col">
+                          <span
+                            className={cn('truncate text-base', isSelected ? 'font-semibold' : 'font-normal')}
+                          >
+                            {opt.label}
+                          </span>
+                          {opt.description && (
+                            <span
+                              className={cn(
+                                'mt-0.5 text-xs',
+                                isSelected ? 'text-brand-600/80' : 'text-road-500',
+                              )}
+                            >
+                              {opt.description}
+                            </span>
+                          )}
+                        </span>
+                        {isSelected && (
+                          <AppIcons.check {...iconPropsSm} className="mt-0.5 shrink-0 text-brand-600" />
                         )}
                       </button>
                     </li>

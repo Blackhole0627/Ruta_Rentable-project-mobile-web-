@@ -30,6 +30,8 @@ export interface AuthRecord {
   role: UserRole;
   /** Name captured at signup, applied to the user row after OTP verification. */
   pendingName?: string;
+  /** SHA-256 hash of the account password. Absent on legacy/OTP-only records. */
+  passwordHash?: string;
 }
 
 export interface MetaRecord {

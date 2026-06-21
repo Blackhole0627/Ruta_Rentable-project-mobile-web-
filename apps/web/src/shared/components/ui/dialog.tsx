@@ -23,26 +23,26 @@ export function Dialog({ open, onClose, title, children, className }: DialogProp
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-road-900/50 p-4"
+      className="animate-backdrop-in fixed inset-0 z-[100] flex items-center justify-center bg-road-900/40 p-4 backdrop-blur-sm"
       onClick={onClose}
       role="presentation"
     >
       <div
         className={cn(
-          'max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white shadow-xl',
+          'animate-slide-up-in max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white shadow-card-lg ring-1 ring-road-100',
           className,
         )}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
       >
-        <div className="flex items-center justify-between border-b border-road-100 p-4">
-          <h2 className="text-lg font-semibold">{title}</h2>
+        <div className="flex items-center justify-between gap-2.5 border-b border-road-100 px-4 py-3">
+          <h2 className="text-lg font-bold text-road-900">{title}</h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="Cerrar"
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-road-500 hover:bg-road-100"
+            className="press -mr-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-road-400 hover:bg-road-100 hover:text-road-700"
           >
             <AppIcons.close {...iconPropsSm} />
           </button>

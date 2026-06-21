@@ -39,12 +39,21 @@ export function SubscriptionPage() {
 
   if (status !== 'authenticated') {
     return (
-      <div className="space-y-4">
-        <h1 className="text-xl font-bold">{t('Suscripción')}</h1>
-        <Card>
-          <CardContent className="py-8 text-center text-road-600">
-            {t('Inicia sesión para gestionar tu suscripción.')}
-            <Button className="mt-4" onClick={() => navigate('/entrar')}>
+      <div className="space-y-3">
+        <header>
+          <h1 className="text-lg font-extrabold tracking-tight text-road-900">
+            {t('Suscripción')}
+          </h1>
+        </header>
+        <Card className="ring-1 ring-road-100">
+          <CardContent className="flex flex-col items-center gap-2.5 py-8 text-center">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gold-grad text-gold-900 shadow-sm">
+              <AppIcons.crown size={24} />
+            </span>
+            <p className="text-sm text-road-500">
+              {t('Inicia sesión para gestionar tu suscripción.')}
+            </p>
+            <Button className="w-full" onClick={() => navigate('/entrar')}>
               {t('Iniciar sesión')}
             </Button>
           </CardContent>
@@ -114,11 +123,19 @@ export function SubscriptionPage() {
   }
 
   const bannerStyles: Record<string, string> = {
-    active: 'bg-brand-50 text-brand-800 border-brand-300',
-    pending: 'bg-amber-50 text-amber-800 border-amber-300',
-    rejected: 'bg-red-50 text-danger-600 border-danger-500/40',
-    overdue: 'bg-red-50 text-danger-600 border-danger-500/40',
-    kyc: 'bg-amber-50 text-amber-800 border-amber-300',
+    active: 'bg-brand-50 text-brand-800 ring-brand-200',
+    pending: 'bg-amber-50 text-amber-800 ring-amber-200',
+    rejected: 'bg-danger-50 text-danger-700 ring-danger-100',
+    overdue: 'bg-danger-50 text-danger-700 ring-danger-100',
+    kyc: 'bg-amber-50 text-amber-800 ring-amber-200',
+  };
+
+  const bannerIcons: Record<string, typeof AppIcons.clock> = {
+    active: AppIcons.success,
+    pending: AppIcons.clock,
+    rejected: AppIcons.alert,
+    overdue: AppIcons.alert,
+    kyc: AppIcons.shieldCheck,
   };
 
   const closeDialog = () => {
@@ -144,53 +161,84 @@ export function SubscriptionPage() {
   };
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-xl font-bold">{t('Suscripción')}</h1>
+    <div className="space-y-3">
+      <header>
+        <h1 className="text-lg font-extrabold tracking-tight text-road-900">
+          {t('Suscripción')}
+        </h1>
+        <p className="mt-0.5 text-xs text-road-500">
+          {t('Mejora tu plan para guardar viajes ilimitados y sincronizarlos en la nube.')}
+        </p>
+      </header>
 
       {banner && (
         <div
           className={cn(
-            'flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium',
+            'flex items-center gap-2.5 rounded-2xl px-3.5 py-2.5 text-sm font-medium shadow-card ring-1',
             bannerStyles[banner.variant],
           )}
         >
-          <AppIcons.clock size={16} className="shrink-0" />
+          {(() => {
+            const Icon = bannerIcons[banner.variant];
+            return <Icon size={18} className="shrink-0" />;
+          })()}
           {banner.text}
         </div>
       )}
 
       {showKyc && <KycSection />}
 
-      <div className="space-y-3">
+      <div className="space-y-2">
         {plans.map((plan) => {
           const isCurrent = plan.id === currentPlan;
+          const isPaid = (plan.priceNio ?? 0) > 0;
           return (
             <Card
               key={plan.id}
-              className={isCurrent ? 'border-brand-500 ring-1 ring-brand-500' : undefined}
+              className={cn(
+                'animate-slide-up-in overflow-hidden ring-1',
+                isCurrent
+                  ? 'ring-2 ring-brand-500 ring-road-100'
+                  : isPaid
+                    ? 'ring-gold-200'
+                    : 'ring-road-100',
+              )}
             >
-              <CardContent className="space-y-2 pt-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-bold">{plan.name}</h3>
-                  {isCurrent ? (
-                    <Badge variant="profitable">{t('Plan actual')}</Badge>
-                  ) : (
-                    <span className="text-right">
-                      <span className="text-xl font-bold text-brand-700">
+              {isPaid && (
+                <div className="flex items-center gap-1.5 bg-gold-grad px-3.5 py-1 text-xs font-bold text-gold-900">
+                  <AppIcons.crown size={14} />
+                  {t('Premium')}
+                </div>
+              )}
+              <CardContent className="space-y-2 p-3.5">
+                <div className="flex items-start justify-between gap-2.5">
+                  <div className="min-w-0">
+                    <h3 className="text-base font-extrabold tracking-tight text-road-900">
+                      {plan.name}
+                    </h3>
+                    {isCurrent && (
+                      <Badge variant="profitable" className="mt-1">
+                        {t('Plan actual')}
+                      </Badge>
+                    )}
+                  </div>
+                  {isPaid && (
+                    <span className="shrink-0 text-right">
+                      <span className="tabular text-xl font-extrabold tracking-tight text-road-900">
                         {formatCurrency(plan.priceNio ?? 0, currency, { compact: true })}
                       </span>
-                      <span className="text-xs text-road-500">{t('/mes')}</span>
+                      <span className="text-xs font-medium text-road-500">{t('/mes')}</span>
                     </span>
                   )}
                 </div>
                 <ul className="space-y-1 text-sm text-road-600">
                   {(plan.features ?? []).map((f) => (
                     <li key={f} className="flex items-center gap-2">
-                      <AppIcons.check size={14} className="text-brand-600" /> {f}
+                      <AppIcons.check size={16} className="shrink-0 text-brand-600" /> {f}
                     </li>
                   ))}
                   <li className="flex items-center gap-2">
-                    <AppIcons.check size={14} className="text-brand-600" />
+                    <AppIcons.check size={16} className="shrink-0 text-brand-600" />
                     {plan.calcLimit == null
                       ? t('Cálculos ilimitados')
                       : t('{n} cálculos', { n: plan.calcLimit })}
@@ -205,7 +253,7 @@ export function SubscriptionPage() {
                   >
                     {confirmUnsub ? t('¿Confirmar cancelación?') : t('Cancelar suscripción')}
                   </Button>
-                ) : !isCurrent && (plan.priceNio ?? 0) > 0 ? (
+                ) : !isCurrent && isPaid ? (
                   <Button
                     className="mt-2 w-full"
                     disabled={hasActivePaid}
@@ -223,16 +271,17 @@ export function SubscriptionPage() {
       </div>
 
       {payments.length > 0 && (
-        <Card>
-          <CardContent className="pt-4">
-            <h3 className="mb-2 flex items-center gap-2 text-base font-semibold">
-              <AppIcons.billing {...iconPropsSm} /> {t('Historial de pagos')}
+        <Card className="ring-1 ring-road-100">
+          <CardContent className="p-3.5">
+            <h3 className="mb-2.5 flex items-center gap-2 text-base font-bold text-road-900">
+              <AppIcons.billing {...iconPropsSm} className="text-brand-600" />{' '}
+              {t('Historial de pagos')}
             </h3>
             <ul className="divide-y divide-road-100 text-sm">
               {payments.map((p) => (
-                <li key={p.id} className="flex items-center justify-between py-2">
+                <li key={p.id} className="flex items-center justify-between py-2.5">
                   <span>
-                    <span className="block font-medium">
+                    <span className="tabular block font-bold tracking-tight text-road-900">
                       {formatCurrency(p.amount, currency, { compact: true })}
                     </span>
                     <span className="text-xs text-road-500">
@@ -267,17 +316,17 @@ export function SubscriptionPage() {
         onClose={closeDialog}
         title={t('Pagar {plan}', { plan: selectedPlan?.name ?? '' })}
       >
-        <div className="space-y-4">
-          <div className="rounded-lg bg-brand-50 px-3 py-2 text-center">
-            <span className="text-2xl font-extrabold text-brand-700">
+        <div className="space-y-2.5">
+          <div className="rounded-2xl bg-gradient-to-br from-gold-50 to-gold-100 px-3.5 py-3 text-center ring-1 ring-gold-200">
+            <span className="tabular text-2xl font-extrabold tracking-tight text-gold-900">
               {formatCurrency(selectedPlan?.priceNio ?? 0, currency, { compact: true })}
             </span>
-            <span className="text-sm text-road-500"> {t('/mes')}</span>
+            <span className="text-sm font-medium text-gold-800"> {t('/mes')}</span>
           </div>
 
           {!kycVerified && (
-            <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-              <AppIcons.shieldCheck size={16} className="mt-0.5 shrink-0" />
+            <div className="flex items-start gap-2.5 rounded-2xl bg-amber-50 px-3.5 py-2.5 text-xs text-amber-800 ring-1 ring-amber-200">
+              <AppIcons.shieldCheck size={18} className="mt-0.5 shrink-0" />
               <p>
                 {t(
                   'Tras el pago deberás verificar tu identidad (KYC). Tu plan se activa cuando un administrador la apruebe.',
@@ -286,12 +335,14 @@ export function SubscriptionPage() {
             </div>
           )}
 
-          <div className="flex rounded-lg border border-road-200 p-0.5 text-sm">
+          <div className="flex gap-1 rounded-xl bg-road-100 p-1 text-sm">
             <button
               type="button"
               className={cn(
-                'flex-1 rounded-md py-2 font-medium transition-colors',
-                payMethod === 'card' ? 'bg-brand-500 text-white' : 'text-road-600',
+                'press min-h-[40px] flex-1 rounded-lg py-2 font-semibold transition-all',
+                payMethod === 'card'
+                  ? 'bg-white text-road-900 shadow-card'
+                  : 'text-road-500',
               )}
               onClick={() => setPayMethod('card')}
             >
@@ -300,8 +351,10 @@ export function SubscriptionPage() {
             <button
               type="button"
               className={cn(
-                'flex-1 rounded-md py-2 font-medium transition-colors',
-                payMethod === 'transfer' ? 'bg-brand-500 text-white' : 'text-road-600',
+                'press min-h-[40px] flex-1 rounded-lg py-2 font-semibold transition-all',
+                payMethod === 'transfer'
+                  ? 'bg-white text-road-900 shadow-card'
+                  : 'text-road-500',
               )}
               onClick={() => setPayMethod('transfer')}
             >
@@ -311,18 +364,19 @@ export function SubscriptionPage() {
 
           {payMethod === 'card' ? (
             <>
-              <div className="flex items-start gap-2 rounded-xl border border-road-200 p-3 text-sm text-road-600">
-                <AppIcons.billing size={18} className="mt-0.5 shrink-0 text-brand-600" />
+              <div className="flex items-start gap-2.5 rounded-2xl bg-white p-3 text-sm text-road-600 shadow-card ring-1 ring-road-100">
+                <AppIcons.billing size={20} className="mt-0.5 shrink-0 text-brand-600" />
                 <p>
                   {t(
                     'Paga de forma segura con tarjeta de crédito o débito. Tu suscripción se activa automáticamente al confirmar el pago.',
                   )}
                 </p>
               </div>
-              <Button className="w-full" onClick={handlePay} disabled={working}>
+              <Button className="w-full" size="lg" onClick={handlePay} disabled={working}>
                 {working ? t('Redirigiendo…') : t('Pagar con tarjeta')}
               </Button>
-              <p className="text-center text-xs text-road-400">
+              <p className="flex items-center justify-center gap-1.5 text-center text-xs text-road-400">
+                <AppIcons.lock size={13} className="shrink-0" />
                 {t('Procesado por LAFISE Poket. No almacenamos los datos de tu tarjeta.')}
               </p>
             </>

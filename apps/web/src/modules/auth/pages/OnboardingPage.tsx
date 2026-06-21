@@ -55,8 +55,17 @@ export function OnboardingPage() {
 
   if (isSetup) {
     return (
-      <div className="flex min-h-screen flex-col justify-center bg-road-900 px-4 py-8">
-        <Card>
+      <div className="relative flex min-h-screen flex-col justify-center overflow-hidden bg-road-900 px-4 py-8">
+        <div className="pointer-events-none absolute -top-24 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-brand-500/30 blur-3xl" />
+        <div className="relative mx-auto mb-4 flex items-center gap-2">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-grad shadow-brand">
+            <AppIcons.calculator size={19} className="text-white" />
+          </span>
+          <span className="text-[17px] font-extrabold tracking-tight text-white">
+            Ruta<span className="text-brand-400">Rentable</span>
+          </span>
+        </div>
+        <Card className="relative">
           <CardHeader>
             <CardTitle>{t('Configura tu perfil')}</CardTitle>
           </CardHeader>
@@ -116,18 +125,36 @@ export function OnboardingPage() {
   const Icon = slide.icon;
 
   return (
-    <div className="flex min-h-screen flex-col justify-between bg-road-900 px-6 py-12 text-white">
-      <div className="flex flex-1 flex-col items-center justify-center text-center">
-        <Icon {...iconPropsLg} className="mb-6 h-16 w-16 text-brand-500" style={{ width: 64, height: 64 }} />
-        <h1 className="text-2xl font-bold">{t(slide.title)}</h1>
-        <p className="mt-4 max-w-sm text-road-300">{t(slide.text)}</p>
+    <div className="relative flex min-h-screen flex-col justify-between overflow-hidden bg-road-900 px-6 py-8 text-white">
+      {/* Ambient emerald glow for depth. */}
+      <div className="pointer-events-none absolute -top-20 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-brand-500/25 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-24 -right-10 h-64 w-64 rounded-full bg-brand-700/20 blur-3xl" />
+
+      <div className="relative flex justify-center pt-2">
+        <button
+          type="button"
+          onClick={() => setStep(slides.length)}
+          className="text-sm font-medium text-road-400 hover:text-white"
+        >
+          {t('Saltar')}
+        </button>
       </div>
-      <div className="space-y-4">
+
+      <div className="relative flex flex-1 flex-col items-center justify-center text-center">
+        <span className="mb-5 flex h-20 w-20 items-center justify-center rounded-2xl bg-brand-grad shadow-brand-lg ring-1 ring-white/10">
+          <Icon {...iconPropsLg} className="text-white" style={{ width: 38, height: 38 }} />
+        </span>
+        <h1 className="text-[22px] font-extrabold leading-tight tracking-tight">
+          {t(slide.title)}
+        </h1>
+        <p className="mt-3 max-w-sm leading-relaxed text-road-300">{t(slide.text)}</p>
+      </div>
+      <div className="relative space-y-4">
         <div className="flex justify-center gap-2">
           {slides.map((_, i) => (
             <div
               key={i}
-              className={`h-2 w-2 rounded-full ${i === step ? 'bg-brand-500' : 'bg-road-600'}`}
+              className={`h-1.5 rounded-full transition-all duration-300 ${i === step ? 'w-6 bg-brand-400' : 'w-1.5 bg-road-600'}`}
             />
           ))}
         </div>

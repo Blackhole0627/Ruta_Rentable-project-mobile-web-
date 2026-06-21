@@ -44,6 +44,15 @@ function genCode(): string {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
+/** SHA-256 hash so passwords are never stored in plain text, even locally. */
+async function hashPassword(password: string): Promise<string> {
+  const data = new TextEncoder().encode(password);
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
 function monthKey(iso: string): string {
   return iso.slice(0, 7); // YYYY-MM
 }
@@ -123,6 +132,7 @@ export class MockBackend implements BackendAdapter {
     }
     record.code = code;
     record.pendingName = name.trim() || undefined;
+    record.passwordHash = await hashPassword(password);
     await cloudDb.auth.put(record);
     // Mirror Supabase "Confirm email": no session yet — the caller verifies the
     // 6-digit code next. (Surfaced as devCode in the UI for offline testing.)
@@ -134,9 +144,19 @@ export class MockBackend implements BackendAdapter {
     return this.requestOtp(email);
   }
 
-  async updatePassword(_newPassword: string): Promise<void> {
-    // The mock has no real password store; sign-in accepts any password ≥ 6.
-    void _newPassword;
+  async updatePassword(newPassword: string): Promise<void> {
+    if (newPassword.length < 6) {
+      throw new Error('La contraseña debe tener al menos 6 caracteres.');
+    }
+    const email = this.session?.user.email;
+    if (!email) throw new Error('Inicia sesión para cambiar la contraseña.');
+    await this.ready();
+    const normalized = email.trim().toLowerCase();
+    const record = await cloudDb.auth.get(normalized);
+    if (!record) throw new Error('No se encontró la cuenta.');
+    record.passwordHash = await hashPassword(newPassword);
+    record.code = undefined; // invalidate any pending recovery code
+    await cloudDb.auth.put(record);
   }
 
   async signInWithGoogle(): Promise<AuthSession> {
@@ -157,11 +177,24 @@ export class MockBackend implements BackendAdapter {
     await this.ready();
     if (password.length < 6) throw new Error('La contraseña debe tener al menos 6 caracteres.');
     const normalized = email.trim().toLowerCase();
+    const hash = await hashPassword(password);
     let record = await cloudDb.auth.get(normalized);
     if (!record) {
+      // Unknown email in offline/demo mode: create the account on the fly,
+      // capturing this password so future sign-ins must match it.
       const userId = crypto.randomUUID();
       const role = isAdminEmail(normalized) ? 'admin' : 'driver';
-      record = { email: normalized, userId, role };
+      record = { email: normalized, userId, role, passwordHash: hash };
+      await cloudDb.auth.put(record);
+    } else if (record.passwordHash) {
+      // A password is on file — it must match.
+      if (record.passwordHash !== hash) {
+        throw new Error('Correo o contraseña incorrectos.');
+      }
+    } else {
+      // Legacy account created before passwords were persisted: grandfather it
+      // in and capture this password from now on.
+      record.passwordHash = hash;
       await cloudDb.auth.put(record);
     }
     return this.issueSession(record.email, record.userId, record.role);

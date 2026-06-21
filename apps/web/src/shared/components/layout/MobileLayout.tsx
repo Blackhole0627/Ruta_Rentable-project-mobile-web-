@@ -17,29 +17,29 @@ export function MobileLayout() {
   const isMain = MAIN_TABS.includes(location.pathname);
 
   return (
-    <div className="min-h-screen bg-road-50 pb-24 pt-safe">
+    <div className="min-h-screen pb-24 pt-safe">
       {isMain && <TopNav />}
       {!isMain && (
-        <header className="sticky top-0 z-40 flex items-center gap-1 border-b border-road-100 bg-white/95 px-2 py-2 backdrop-blur">
+        <header className="glass sticky top-0 z-40 flex items-center gap-2 border-b border-road-100/80 px-2 py-2">
           <button
             type="button"
             onClick={() => navigate(-1)}
             aria-label={t('Volver')}
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-road-700 hover:bg-road-100"
+            className="press flex h-10 w-10 items-center justify-center rounded-full text-road-700 hover:bg-road-100 active:bg-road-200"
           >
             <AppIcons.chevronLeft size={24} />
           </button>
-          <span className="text-sm font-medium text-road-500">{t('Volver')}</span>
+          <span className="text-[15px] font-semibold text-road-700">{t('Volver')}</span>
         </header>
       )}
 
       {!isOnline && (
-        <div className="flex items-center justify-center gap-2 bg-amber-500 px-4 py-2 text-sm font-medium text-white">
+        <div className="flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-2 text-sm font-semibold text-white shadow-sm">
           <AppIcons.offline {...iconPropsSm} />
           {t('Sin conexión — puedes seguir calculando')}
         </div>
       )}
-      <main className="mx-auto max-w-lg px-4 py-4">
+      <main className="mx-auto max-w-lg px-3 py-3">
         <Outlet />
       </main>
       <TrackingBanner />

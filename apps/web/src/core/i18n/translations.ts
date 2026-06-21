@@ -55,6 +55,7 @@ export const EN: Record<string, string> = {
   Empezar: 'Start',
   Siguiente: 'Next',
   Configurar: 'Set up',
+  Saltar: 'Skip',
 
   // Login
   'Inicia sesión para sincronizar tus datos': 'Sign in to sync your data',
@@ -81,6 +82,10 @@ export const EN: Record<string, string> = {
 
   // Calculator
   'Hola, {name}': 'Hi, {name}',
+  '¿Vale la pena este viaje?': 'Is this trip worth it?',
+  'Buen viaje, acéptalo': 'Good trip, take it',
+  'Margen justo, tú decides': 'Tight margin, your call',
+  'Mejor recházalo': 'Better to decline it',
   conductor: 'driver',
   'Te quedan {n} cálculos gratis': 'You have {n} free calculations left',
   'Mejorar plan': 'Upgrade plan',
@@ -391,7 +396,6 @@ export const EN: Record<string, string> = {
   'Margen deseado (%)': 'Desired margin (%)',
   'Facturación en grupo': 'Group billing',
   'Pagar por la flota': 'Pay for the fleet',
-  'Pago registrado ✓': 'Payment recorded ✓',
   'Pago simulado (un solo pago por toda la flota).':
     'Simulated payment (one payment for the whole fleet).',
 

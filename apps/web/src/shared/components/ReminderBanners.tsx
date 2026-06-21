@@ -18,16 +18,20 @@ export function ReminderBanners() {
         <div
           key={r.id}
           className={cn(
-            'flex items-start gap-3 rounded-lg border p-3',
+            'flex items-start gap-2.5 rounded-2xl p-3 shadow-card ring-1 ring-inset',
             r.tone === 'warn'
-              ? 'border-amber-200 bg-amber-50'
-              : 'border-brand-200 bg-brand-50',
+              ? 'bg-amber-50/80 ring-amber-200'
+              : 'bg-brand-50/80 ring-brand-200',
           )}
         >
-          <AppIcons.reminder
-            size={18}
-            className={cn('mt-0.5 shrink-0', r.tone === 'warn' ? 'text-amber-600' : 'text-brand-600')}
-          />
+          <span
+            className={cn(
+              'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl',
+              r.tone === 'warn' ? 'bg-amber-100 text-amber-600' : 'bg-brand-100 text-brand-600',
+            )}
+          >
+            <AppIcons.reminder size={17} />
+          </span>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-road-900">{t(r.title, r.vars)}</p>
             <p className="text-xs text-road-600">{t(r.message)}</p>
@@ -48,7 +52,7 @@ export function ReminderBanners() {
             type="button"
             onClick={() => dismiss(r.id)}
             aria-label="Descartar"
-            className="shrink-0 text-road-400 hover:text-road-700"
+            className="press -m-1.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-road-400 hover:bg-road-100/60 hover:text-road-700"
           >
             <AppIcons.close size={16} />
           </button>
