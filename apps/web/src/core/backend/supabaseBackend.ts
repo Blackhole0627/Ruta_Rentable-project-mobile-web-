@@ -266,7 +266,10 @@ export class SupabaseBackend implements BackendAdapter {
   }
 
   async requestOtp(email: string): Promise<{ devCode?: string }> {
-    const { error } = await this.client.auth.signInWithOtp({ email });
+    const { error } = await this.client.auth.signInWithOtp({
+      email: email.trim(),
+      options: { shouldCreateUser: true },
+    });
     if (error) throw error;
     return {};
   }
@@ -382,7 +385,15 @@ export class SupabaseBackend implements BackendAdapter {
   }
 
   async requestPasswordRecovery(email: string): Promise<{ devCode?: string }> {
-    const { error } = await this.client.auth.resetPasswordForEmail(email);
+    const trimmed = email.trim();
+    // Send a 6-digit code via the Magic Link OTP template. The separate
+    // "Reset password" template is easy to miss in the Supabase dashboard and
+    // often ships link-only (no {{ .Token }}). After the user verifies the
+    // code they set a new password while authenticated (updateUser).
+    const { error } = await this.client.auth.signInWithOtp({
+      email: trimmed,
+      options: { shouldCreateUser: false },
+    });
     if (error) throw error;
     return {};
   }

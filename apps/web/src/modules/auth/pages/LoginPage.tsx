@@ -126,7 +126,8 @@ export function LoginPage() {
   };
 
   // ---- Code-step handlers ----
-  const purpose = mode === 'signup' ? 'signup' : mode === 'recover' ? 'recovery' : 'login';
+  // Forgot-password reuses the same email OTP channel as passwordless login.
+  const purpose = mode === 'signup' ? 'signup' : 'login';
   const isRecover = mode === 'recover';
   const canVerify =
     code.length >= 6 &&
