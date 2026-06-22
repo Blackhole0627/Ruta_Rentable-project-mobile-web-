@@ -113,3 +113,4 @@ npx cap open android
 - `requirement(yamamoto) (1).docx` — PRD funcional
 
 <!-- Repo access verified by owner (Blackhole0627) - no app impact -->
+<!-- Maintenance check by owner (Blackhole0627) - no app impact -->
